@@ -1,0 +1,11 @@
+{
+  "name": "aura-mosaic-store",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "client": "npm --prefix client start",
+    "server": "npm --prefix server run dev",
+    "build": "npm --prefix client run build",
+    "check:server": "npm --prefix server run check"
+  }
+}
