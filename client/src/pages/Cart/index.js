@@ -1,11 +1,11 @@
-import { useContext, useMemo } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { MyContext } from "../../App";
 import { Link, useNavigate } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
 import Button from "@mui/material/Button";
 import { IoMdCart } from "react-icons/io";
 import Swal from "sweetalert2";
-import { createOrder } from "../../api/api";
+import { createOrder, getStoreSettings } from "../../api/api";
 import { escapeHtml } from "../../utils/safeHtml";
 
 const Cart = () => {
@@ -19,12 +19,19 @@ const Cart = () => {
     clearCart,
   } = useContext(MyContext);
   const navigate = useNavigate();
+  const [storeSettings, setStoreSettings] = useState({ shippingFlatFee: 60, freeShippingThreshold: 500, allowCOD: true });
+
+  useEffect(() => {
+    getStoreSettings().then((res) => setStoreSettings((current) => ({ ...current, ...(res.data || {}) }))).catch(() => {});
+  }, []);
 
   const subtotal = useMemo(
     () => cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0),
     [cart]
   );
-  const shipping = subtotal > 0 && subtotal < 500 ? 60 : 0;
+  const threshold = Number(storeSettings.freeShippingThreshold || 0);
+  const flatFee = Number(storeSettings.shippingFlatFee || 0);
+  const shipping = subtotal > 0 && subtotal < threshold ? flatFee : 0;
   const estimatedTotal = subtotal + shipping;
 
   const handleCheckout = async () => {
@@ -36,6 +43,11 @@ const Cart = () => {
     if (!user) {
       const go = await openLoginGate("Please sign in to checkout and place your order.");
       if (go) navigate("/register");
+      return;
+    }
+
+    if (!storeSettings.allowCOD) {
+      await Swal.fire("Checkout unavailable", "Cash on Delivery is temporarily disabled by the store.", "info");
       return;
     }
 
@@ -83,6 +95,14 @@ const Cart = () => {
       const response = await createOrder({
         items: cart.map((item) => ({ productId: item.id, qty: item.qty || 1 })),
         city: selectedCity,
+        shippingAddress: {
+          name: user.name || "",
+          phone: user.phone || "",
+          addressLine1: user.addressLine1 || "",
+          addressLine2: user.addressLine2 || "",
+          city: selectedCity,
+          postalCode: user.postalCode || "",
+        },
         payment: { method: "COD" },
       });
       const saved = response.data;

@@ -1,4 +1,5 @@
 const express = require("express");
+const bcrypt = require("bcryptjs");
 const { User } = require("../models/user");
 const { Product } = require("../models/products");
 const Order = require("../models/order");
@@ -8,7 +9,6 @@ const { cleanString, isObjectId } = require("../utils/validation");
 const cities = require("../data/cities");
 
 const VALID_CITIES = new Set(cities.map((item) => item.name.toLowerCase()));
-
 const router = express.Router();
 
 function escapeRegex(value) {
@@ -18,7 +18,11 @@ function escapeRegex(value) {
 router.get("/admin/customers", auth, admin, async (req, res, next) => {
   try {
     const search = cleanString(req.query?.q, 120);
+    const active = String(req.query?.active || "").toLowerCase();
     const match = { role: "customer" };
+
+    if (active === "true") match.isActive = { $ne: false };
+    if (active === "false") match.isActive = false;
 
     if (search) {
       const expression = new RegExp(escapeRegex(search), "i");
@@ -70,9 +74,13 @@ router.get("/admin/customers", auth, admin, async (req, res, next) => {
           email: 1,
           phone: 1,
           city: 1,
+          addressLine1: 1,
+          addressLine2: 1,
+          postalCode: 1,
           picture: 1,
           provider: 1,
           isProfileComplete: 1,
+          isActive: 1,
           createdAt: 1,
           updatedAt: 1,
           wishlistCount: 1,
@@ -82,7 +90,7 @@ router.get("/admin/customers", auth, admin, async (req, res, next) => {
         },
       },
       { $sort: { createdAt: -1 } },
-      { $limit: 500 },
+      { $limit: 1000 },
     ]);
 
     return res.json(customers);
@@ -98,17 +106,33 @@ router.get("/admin/customers/:id/orders", auth, admin, async (req, res, next) =>
     }
 
     const customer = await User.findOne({ _id: req.params.id, role: "customer" })
-      .select("name email phone city provider picture isProfileComplete createdAt")
+      .select("name email phone city addressLine1 addressLine2 postalCode provider picture isProfileComplete isActive createdAt")
       .lean();
 
     if (!customer) return res.status(404).json({ message: "Customer not found." });
 
     const orders = await Order.find({ user: req.params.id })
       .sort({ createdAt: -1 })
-      .limit(200)
+      .limit(500)
       .lean();
 
     return res.json({ customer, orders });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.patch("/admin/customers/:id/status", auth, admin, async (req, res, next) => {
+  try {
+    if (!isObjectId(req.params.id)) return res.status(400).json({ message: "Invalid customer id." });
+    const isActive = Boolean(req.body?.isActive);
+    const customer = await User.findOneAndUpdate(
+      { _id: req.params.id, role: "customer" },
+      { $set: { isActive } },
+      { new: true, runValidators: true }
+    ).select("name email phone city provider isActive createdAt");
+    if (!customer) return res.status(404).json({ message: "Customer not found." });
+    return res.json({ customer, message: isActive ? "Customer account enabled." : "Customer account disabled." });
   } catch (err) {
     return next(err);
   }
@@ -132,6 +156,9 @@ router.patch("/me", auth, async (req, res, next) => {
       }
       update.city = city;
     }
+    if ("addressLine1" in req.body) update.addressLine1 = cleanString(req.body.addressLine1, 250);
+    if ("addressLine2" in req.body) update.addressLine2 = cleanString(req.body.addressLine2, 250);
+    if ("postalCode" in req.body) update.postalCode = cleanString(req.body.postalCode, 30);
     if ("picture" in req.body) update.picture = cleanString(req.body.picture, 1000);
     if ("isProfileComplete" in req.body) update.isProfileComplete = Boolean(req.body.isProfileComplete);
 
@@ -139,13 +166,52 @@ router.patch("/me", auth, async (req, res, next) => {
       return res.status(400).json({ message: "Name must contain at least 2 characters." });
     }
 
-    const user = await User.findByIdAndUpdate(req.user.id, update, {
+    const user = await User.findOneAndUpdate({ _id: req.user.id, isActive: { $ne: false } }, update, {
       new: true,
       runValidators: true,
     }).select("-password -wishlist");
 
-    if (!user) return res.status(404).json({ message: "User not found." });
+    if (!user) return res.status(404).json({ message: "User not found or account disabled." });
     return res.json({ user });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.patch("/me/password", auth, async (req, res, next) => {
+  try {
+    const currentPassword = String(req.body?.currentPassword || "");
+    const newPassword = String(req.body?.newPassword || "");
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      return res.status(400).json({ message: "New password must be between 8 and 128 characters." });
+    }
+
+    const user = await User.findById(req.user.id).select("+password provider isActive");
+    if (!user || user.isActive === false) return res.status(404).json({ message: "User not found." });
+    if (!user.password || user.provider === "google") {
+      return res.status(400).json({ message: "This account uses Google sign-in and does not have a local password." });
+    }
+    const matches = await bcrypt.compare(currentPassword, user.password);
+    if (!matches) return res.status(401).json({ message: "Current password is incorrect." });
+    user.password = await bcrypt.hash(newPassword, 12);
+    await user.save();
+    return res.json({ message: "Password updated successfully." });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.delete("/me", auth, async (req, res, next) => {
+  try {
+    const hasOpenOrder = await Order.exists({
+      user: req.user.id,
+      status: { $in: ["pending", "confirmed", "processing", "shipped"] },
+    });
+    if (hasOpenOrder) {
+      return res.status(409).json({ message: "Your account cannot be disabled while you have an active order." });
+    }
+    await User.updateOne({ _id: req.user.id }, { $set: { isActive: false } });
+    return res.json({ message: "Your account has been disabled." });
   } catch (err) {
     return next(err);
   }
@@ -153,8 +219,8 @@ router.patch("/me", auth, async (req, res, next) => {
 
 router.get("/me/wishlist", auth, async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id)
-      .populate({ path: "wishlist", populate: { path: "category", select: "name" } })
+    const user = await User.findOne({ _id: req.user.id, isActive: { $ne: false } })
+      .populate({ path: "wishlist", match: { isActive: { $ne: false } }, populate: { path: "category", select: "name" } })
       .select("wishlist")
       .lean();
     if (!user) return res.status(404).json({ message: "User not found." });
@@ -169,10 +235,10 @@ router.post("/me/wishlist/:productId", auth, async (req, res, next) => {
     const { productId } = req.params;
     if (!isObjectId(productId)) return res.status(400).json({ message: "Invalid product id." });
 
-    const exists = await Product.exists({ _id: productId });
+    const exists = await Product.exists({ _id: productId, isActive: { $ne: false } });
     if (!exists) return res.status(404).json({ message: "Product not found." });
 
-    await User.updateOne({ _id: req.user.id }, { $addToSet: { wishlist: productId } });
+    await User.updateOne({ _id: req.user.id, isActive: { $ne: false } }, { $addToSet: { wishlist: productId } });
     return res.status(204).end();
   } catch (err) {
     return next(err);

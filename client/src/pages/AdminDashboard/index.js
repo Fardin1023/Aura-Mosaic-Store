@@ -17,11 +17,14 @@ import {
   getProductImageUploadSignature,
   getProducts,
   updateAdminOrderStatus,
+  updateAdminOrder,
+  updateAdminCustomerStatus,
   updateCategory,
   updateProduct,
   updateSubcategory,
 } from "../../api/api";
 import "./style.css";
+import AdminOperations from "./AdminOperations";
 
 const EMPTY_PRODUCT = {
   name: "",
@@ -275,13 +278,15 @@ function AdminDashboard() {
     [categories, productForm.category]
   );
 
+  const lowStockThreshold = Number(dashboard.lowStockThreshold ?? 5);
+
   const filteredProducts = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
     return products.filter((product) => {
       const stock = Number(product.countInStock || 0);
-      if (productStockFilter === "low" && stock > 5) return false;
+      if (productStockFilter === "low" && stock > lowStockThreshold) return false;
       if (productStockFilter === "out" && stock !== 0) return false;
-      if (productStockFilter === "healthy" && stock <= 5) return false;
+      if (productStockFilter === "healthy" && stock <= lowStockThreshold) return false;
 
       if (!q) return true;
       const categoryName = product?.category?.name || "";
@@ -289,10 +294,10 @@ function AdminDashboard() {
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(q));
     });
-  }, [products, productSearch, productStockFilter]);
+  }, [products, productSearch, productStockFilter, lowStockThreshold]);
 
   const stats = useMemo(() => {
-    const lowStock = products.filter((product) => Number(product.countInStock || 0) <= 5).length;
+    const lowStock = products.filter((product) => Number(product.countInStock || 0) <= lowStockThreshold).length;
     const featured = products.filter((product) => product.isFeatured).length;
     return {
       products: products.length,
@@ -300,7 +305,7 @@ function AdminDashboard() {
       featured,
       lowStock,
     };
-  }, [products, categories]);
+  }, [products, categories, lowStockThreshold]);
 
   const filteredOrders = useMemo(() => {
     const query = orderSearch.trim().toLowerCase();
@@ -411,6 +416,37 @@ function AdminDashboard() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const editOrderMeta = async (order) => {
+    const tracking = await Swal.fire({
+      title: "Tracking number",
+      input: "text",
+      inputValue: order.trackingNumber || "",
+      inputPlaceholder: "Courier tracking number (optional)",
+      showCancelButton: true,
+    });
+    if (!tracking.isConfirmed) return;
+    const note = await Swal.fire({
+      title: "Internal order note",
+      input: "textarea",
+      inputValue: order.adminNote || "",
+      inputPlaceholder: "Visible to administrators only",
+      showCancelButton: true,
+    });
+    if (!note.isConfirmed) return;
+    try {
+      const response = await updateAdminOrder(order._id, {
+        trackingNumber: tracking.value || "",
+        adminNote: note.value || "",
+      });
+      const updated = response.data;
+      setOrders((rows) => rows.map((row) => String(row._id) === String(order._id) ? { ...row, ...updated } : row));
+      setSelectedOrder((current) => String(current?._id || "") === String(order._id) ? { ...current, ...updated } : current);
+      Swal.fire({ icon: "success", title: "Order details saved", timer: 1000, showConfirmButton: false });
+    } catch (error) {
+      Swal.fire("Could not save order details", messageFrom(error), "error");
+    }
+  };
+
   const updateOrderStatus = async (order, nextStatus) => {
     if (!nextStatus || nextStatus === order.status) return;
     const result = await Swal.fire({
@@ -431,6 +467,26 @@ function AdminDashboard() {
       Swal.fire("Could not update order", messageFrom(error), "error");
     } finally {
       setUpdatingOrderId("");
+    }
+  };
+
+  const toggleCustomerStatus = async (customer) => {
+    const nextActive = customer.isActive === false;
+    const result = await Swal.fire({
+      title: nextActive ? "Enable this customer?" : "Disable this customer?",
+      text: nextActive ? "They will be able to sign in again." : "They will be signed out on their next authenticated request and cannot sign in until re-enabled.",
+      icon: nextActive ? "question" : "warning",
+      showCancelButton: true,
+      confirmButtonText: nextActive ? "Enable account" : "Disable account",
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await updateAdminCustomerStatus(customer._id, nextActive);
+      await loadOperations();
+      setSelectedCustomer((current) => String(current?._id || "") === String(customer._id) ? { ...current, isActive: nextActive } : current);
+      Swal.fire({ icon: "success", title: nextActive ? "Customer enabled" : "Customer disabled", timer: 1000, showConfirmButton: false });
+    } catch (error) {
+      Swal.fire("Could not update customer", messageFrom(error), "error");
     }
   };
 
@@ -750,6 +806,7 @@ function AdminDashboard() {
           <button type="button" className={tab === "customers" ? "active" : ""} onClick={() => setTab("customers")}>Customers</button>
           <button type="button" className={tab === "products" ? "active" : ""} onClick={() => setTab("products")}>Products</button>
           <button type="button" className={tab === "categories" ? "active" : ""} onClick={() => setTab("categories")}>Categories</button>
+          <button type="button" className={tab === "operations" ? "active" : ""} onClick={() => setTab("operations")}>Operations</button>
         </div>
 
         {tab === "overview" && (
@@ -762,7 +819,7 @@ function AdminDashboard() {
                   <MetricRing label="Total Orders" value={dashboard.totals?.totalOrders || 0} helper="All-time orders" onClick={() => openOrders()} />
                   <MetricRing label="Pending Orders" value={dashboard.totals?.pendingOrders || 0} helper="Awaiting confirmation" onClick={() => openOrders({ status: "pending" })} />
                   <MetricRing label="Revenue" value={dashboard.totals?.revenue || 0} moneyValue helper="Paid orders only" onClick={() => openOrders({ payment: "PAID" })} />
-                  <MetricRing label="Low Stock Products" value={dashboard.totals?.lowStockProducts || 0} helper="5 units or fewer" onClick={() => openProducts("low")} />
+                  <MetricRing label="Low Stock Products" value={dashboard.totals?.lowStockProducts || 0} helper={`${dashboard.lowStockThreshold ?? 5} units or fewer`} onClick={() => openProducts("low")} />
                 </section>
 
                 <section className="admin-chart-grid">
@@ -884,12 +941,12 @@ function AdminDashboard() {
               <section className="admin-panel admin-order-detail">
                 <div className="admin-panel-title">
                   <div><h2>Order #{String(selectedOrder._id).slice(-8).toUpperCase()}</h2><p>{shortDate(selectedOrder.createdAt)}</p></div>
-                  <button type="button" className="admin-secondary-btn" onClick={() => setSelectedOrder(null)}>Close details</button>
+                  <div className="admin-detail-actions"><button type="button" className="admin-secondary-btn" onClick={() => editOrderMeta(selectedOrder)}>Tracking / note</button><button type="button" className="admin-secondary-btn" onClick={() => setSelectedOrder(null)}>Close details</button></div>
                 </div>
                 <div className="admin-order-detail-grid">
                   <div className="admin-order-info-card"><span>Customer</span><strong>{selectedOrder?.user?.name || "Customer"}</strong><p>{selectedOrder?.user?.email || "—"}</p><p>{selectedOrder?.user?.phone || "No phone saved"}</p></div>
-                  <div className="admin-order-info-card"><span>Delivery</span><strong>{selectedOrder.city || selectedOrder?.user?.city || "—"}</strong><p>Shipping: {money(selectedOrder.shipping)}</p></div>
-                  <div className="admin-order-info-card"><span>Payment</span><strong>{selectedOrder?.payment?.method || "COD"}</strong><p>{selectedOrder?.payment?.status || "PENDING"}</p></div>
+                  <div className="admin-order-info-card"><span>Delivery</span><strong>{selectedOrder?.shippingAddress?.city || selectedOrder.city || selectedOrder?.user?.city || "—"}</strong><p>{selectedOrder?.shippingAddress?.addressLine1 || "Address not supplied"}</p><p>{selectedOrder?.shippingAddress?.phone || selectedOrder?.user?.phone || "No phone"}</p><p>Shipping: {money(selectedOrder.shipping)}</p></div>
+                  <div className="admin-order-info-card"><span>Payment</span><strong>{selectedOrder?.payment?.method || "COD"}</strong><p>{selectedOrder?.payment?.status || "PENDING"}</p>{selectedOrder.trackingNumber && <p>Tracking: {selectedOrder.trackingNumber}</p>}{selectedOrder.adminNote && <p>Note: {selectedOrder.adminNote}</p>}</div>
                   <div className="admin-order-info-card"><span>Total</span><strong>{money(selectedOrder.total)}</strong><p>Subtotal: {money(selectedOrder.subtotal)}</p></div>
                 </div>
                 <div className="admin-order-items">
@@ -926,7 +983,7 @@ function AdminDashboard() {
                         <td>
                           <div className="admin-customer-cell">
                             {customer.picture ? <img src={customer.picture} alt="" /> : <span className="admin-customer-avatar">{String(customer.name || customer.email || "C").slice(0, 1).toUpperCase()}</span>}
-                            <div><strong>{customer.name || "Customer"}</strong><span className="admin-table-sub">{customer.provider === "google" ? "Google account" : "Email account"}</span></div>
+                            <div><strong>{customer.name || "Customer"}</strong><span className="admin-table-sub">{customer.provider === "google" ? "Google account" : "Email account"} · {customer.isActive === false ? "Disabled" : "Active"}</span></div>
                           </div>
                         </td>
                         <td>{customer.email}<span className="admin-table-sub">{customer.phone || "No phone saved"}</span></td>
@@ -935,7 +992,7 @@ function AdminDashboard() {
                         <td>{money(customer.totalSpent)}</td>
                         <td>{customer.lastOrderAt ? shortDate(customer.lastOrderAt) : "No orders"}</td>
                         <td>{shortDate(customer.createdAt)}</td>
-                        <td><button type="button" className="admin-order-link" onClick={() => openCustomer(customer)}>View</button></td>
+                        <td><button type="button" className="admin-order-link" onClick={() => openCustomer(customer)}>View</button> <button type="button" className={customer.isActive === false ? "admin-order-link" : "admin-danger-link"} onClick={() => toggleCustomerStatus(customer)}>{customer.isActive === false ? "Enable" : "Disable"}</button></td>
                       </tr>
                     )) : <tr><td colSpan="8" className="admin-empty-cell">{customers.length ? "No customers match your search." : "No customer accounts yet."}</td></tr>}
                   </tbody>
@@ -959,7 +1016,7 @@ function AdminDashboard() {
                 <div className="admin-customer-summary-grid">
                   <div className="admin-order-info-card"><span>Contact</span><strong>{selectedCustomer.email || "—"}</strong><p>{selectedCustomer.phone || "No phone saved"}</p></div>
                   <div className="admin-order-info-card"><span>Delivery city</span><strong>{selectedCustomer.city || "Not set"}</strong><p>{selectedCustomer.isProfileComplete ? "Profile completed" : "Profile incomplete"}</p></div>
-                  <div className="admin-order-info-card"><span>Account</span><strong>{selectedCustomer.provider === "google" ? "Google" : "Email & password"}</strong><p>Joined {shortDate(selectedCustomer.createdAt)}</p></div>
+                  <div className="admin-order-info-card"><span>Account</span><strong>{selectedCustomer.provider === "google" ? "Google" : "Email & password"}</strong><p>{selectedCustomer.isActive === false ? "Disabled" : "Active"} · Joined {shortDate(selectedCustomer.createdAt)}</p></div>
                   <div className="admin-order-info-card"><span>Store activity</span><strong>{Number(selectedCustomer.orderCount || 0)} orders · {money(selectedCustomer.totalSpent)}</strong><p>{Number(selectedCustomer.wishlistCount || 0)} wishlist item{Number(selectedCustomer.wishlistCount || 0) === 1 ? "" : "s"}</p></div>
                 </div>
 
@@ -995,6 +1052,10 @@ function AdminDashboard() {
               </section>
             )}
           </>
+        )}
+
+        {tab === "operations" && (
+          <AdminOperations onChanged={refreshAll} />
         )}
 
         {tab === "products" && (
@@ -1126,7 +1187,7 @@ function AdminDashboard() {
                   <input className="admin-search" value={productSearch} onChange={(e) => setProductSearch(e.target.value)} placeholder="Search catalogue…" />
                   <select value={productStockFilter} onChange={(e) => setProductStockFilter(e.target.value)}>
                     <option value="">All stock levels</option>
-                    <option value="low">Low stock (≤ 5)</option>
+                    <option value="low">Low stock (≤ {lowStockThreshold})</option>
                     <option value="out">Out of stock</option>
                     <option value="healthy">Healthy stock (&gt; 5)</option>
                   </select>
@@ -1151,7 +1212,7 @@ function AdminDashboard() {
                           </td>
                           <td>{product?.category?.name || "—"}</td>
                           <td>Tk. {Number(product.price || 0).toFixed(2)}</td>
-                          <td className={Number(product.countInStock || 0) <= 5 ? "admin-low-stock" : ""}>{product.countInStock}</td>
+                          <td className={Number(product.countInStock || 0) <= lowStockThreshold ? "admin-low-stock" : ""}>{product.countInStock}</td>
                           <td>{product.isFeatured ? <span className="admin-badge featured">Featured</span> : <span className="admin-badge">Standard</span>}</td>
                           <td>
                             <div className="admin-actions">

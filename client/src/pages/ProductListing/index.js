@@ -71,6 +71,12 @@ const ProductListing = () => {
     ? "All Products"
     : routeCategory || "Products";
 
+  const effectiveProductView = items.length <= 1
+    ? "one"
+    : items.length === 2
+    ? "two"
+    : productView;
+
   const runSearch = async (targetPage = 1, overrides = {}) => {
     setLoading(true);
     try {
@@ -265,16 +271,16 @@ const ProductListing = () => {
             </div>
           </div>
 
-          <div className="content_right">
+          <div className={`content_right ${items.length <= 2 ? "is-sparse" : ""}`}>
             <h3 className="mt-3 mb-1">{title}</h3>
             <p className="text-muted mb-3">Showing {items.length} of {total} items (Sort: {SORT_LABELS[sort]})</p>
 
             <div className="showBy mt-3 mb-3 d-flex justify-content-start">
               <div className="d-flex align-items-center btnWrapper">
-                <Button className={productView === "one" ? "act" : ""} onClick={() => setProductView("one")}><IoMdMenu /></Button>
-                <Button className={productView === "two" ? "act" : ""} onClick={() => setProductView("two")}><PiDotsNineBold /></Button>
-                <Button className={productView === "three" ? "act" : ""} onClick={() => setProductView("three")}><BsFillGridFill /></Button>
-                <Button className={productView === "four" ? "act" : ""} onClick={() => setProductView("four")}><TfiLayoutGrid3Alt /></Button>
+                <Button className={effectiveProductView === "one" ? "act" : ""} onClick={() => setProductView("one")}><IoMdMenu /></Button>
+                <Button className={effectiveProductView === "two" ? "act" : ""} onClick={() => setProductView("two")}><PiDotsNineBold /></Button>
+                <Button className={effectiveProductView === "three" ? "act" : ""} onClick={() => setProductView("three")}><BsFillGridFill /></Button>
+                <Button className={effectiveProductView === "four" ? "act" : ""} onClick={() => setProductView("four")}><TfiLayoutGrid3Alt /></Button>
               </div>
 
               <div className="ml-3 showByFilter">
@@ -301,8 +307,8 @@ const ProductListing = () => {
             ) : items.length === 0 ? (
               <p>No products match your search or filters.</p>
             ) : (
-              <div className="productListing">
-                {items.map((product) => <ProductItem key={product._id} product={product} itemView={productView} />)}
+              <div className={`productListing product-results-grid view-${effectiveProductView}`}>
+                {items.map((product) => <ProductItem key={product._id} product={product} itemView={effectiveProductView} />)}
               </div>
             )}
 

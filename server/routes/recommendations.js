@@ -2,8 +2,172 @@ const express = require("express");
 const { Product } = require("../models/products");
 const { Category } = require("../models/category");
 const { cleanString, escapeRegex, isObjectId } = require("../utils/validation");
+const authMiddleware = require("../middleware/authMiddleware");
+const optionalAuth = require("../middleware/optionalAuth");
+const { runAssistantV2 } = require("../services/assistantV2");
+const { runShoppingAdvisor, runGiftDesigner, aiConfigured, aiModel } = require("../services/aiAdvisor");
 
 const router = express.Router();
+
+router.get("/ai/status", (_req, res) => {
+  return res.json({
+    configured: aiConfigured(),
+    model: aiModel(),
+  });
+});
+
+
+router.post("/ai/gift-designer", optionalAuth, async (req, res, next) => {
+  try {
+    const prompt = cleanString(req.body?.prompt, 1500);
+    if (!prompt || prompt.length < 4) {
+      return res.status(400).json({ message: "Tell Aura AI who the gift is for or what kind of gift you want." });
+    }
+
+    const budgetTotalRaw = Number(req.body?.budgetTotal || 0);
+    const budgetTotal = Number.isFinite(budgetTotalRaw)
+      ? Math.max(0, Math.min(1_000_000, budgetTotalRaw))
+      : 0;
+    const bundleSizeRaw = Number(req.body?.bundleSize || 0);
+    const bundleSize = [1, 2, 3, 4].includes(bundleSizeRaw) ? bundleSizeRaw : 0;
+    const excludeIds = Array.isArray(req.body?.excludeIds)
+      ? req.body.excludeIds.filter(isObjectId).slice(0, 30)
+      : [];
+
+    const result = await runGiftDesigner({
+      userId: req.user?.id || null,
+      prompt,
+      budgetTotal,
+      bundleSize,
+      excludeIds,
+    });
+    return res.json({ ai: true, ...result });
+  } catch (err) {
+    if (err?.code === "AI_NOT_CONFIGURED") {
+      return res.status(503).json({ message: err.message });
+    }
+    if (["AI_TEMPORARILY_UNAVAILABLE", "AI_TIMEOUT"].includes(err?.code) || [429, 503, 504].includes(err?.status)) {
+      console.error("Aura AI Gift Designer availability error:", {
+        message: err.message,
+        attemptedModels: err.attemptedModels || [],
+      });
+      return res.status(503).json({
+        message: "Aura AI Gift Studio is temporarily busy. Please try again in a moment.",
+      });
+    }
+    if ([400, 401, 403, 404, 502].includes(Number(err?.status))) {
+      console.error("Aura AI Gift Designer provider error:", {
+        status: err.status,
+        message: err.message,
+        attemptedModels: err.attemptedModels || [],
+      });
+      return res.status(502).json({
+        message: "Aura AI could not finish designing the gift right now. Please try again.",
+      });
+    }
+    return next(err);
+  }
+});
+
+router.post("/assistant", optionalAuth, async (req, res, next) => {
+  try {
+    const message = cleanString(req.body?.message, 1000);
+    if (!message || message.length < 1) {
+      return res.status(400).json({ message: "Type a message for Aura Assistant." });
+    }
+
+    const history = Array.isArray(req.body?.history) ? req.body.history : [];
+    const clientContext = req.body?.clientContext && typeof req.body.clientContext === "object"
+      ? req.body.clientContext
+      : {};
+
+    const result = await runAssistantV2({
+      userId: req.user?.id || null,
+      message,
+      history,
+      clientContext,
+    });
+    return res.json(result);
+  } catch (err) {
+    if (err?.code === "AI_NOT_CONFIGURED") {
+      return res.status(503).json({ message: err.message });
+    }
+    if (["AI_TEMPORARILY_UNAVAILABLE", "AI_TIMEOUT"].includes(err?.code) || [429, 503, 504].includes(err?.status)) {
+      console.error("Aura Assistant Gemini availability error:", {
+        message: err.message,
+        attemptedModels: err.attemptedModels || [],
+      });
+      return res.status(503).json({ message: "Aura Assistant is temporarily busy. Please try again in a moment." });
+    }
+    if ([400, 401, 403, 404, 502].includes(Number(err?.status))) {
+      console.error("Aura Assistant provider error:", { status: err.status, message: err.message });
+      return res.status(502).json({ message: "Aura Assistant could not complete the AI request right now." });
+    }
+    return next(err);
+  }
+});
+
+router.post("/ai/advisor", authMiddleware, async (req, res, next) => {
+  try {
+    const prompt = cleanString(req.body?.prompt, 1500);
+    if (!prompt || prompt.length < 4) {
+      return res.status(400).json({ message: "Tell Aura AI what you are shopping for." });
+    }
+
+    const result = await runShoppingAdvisor({ userId: req.user.id, prompt });
+    return res.json({ ai: true, ...result });
+  } catch (err) {
+    if (err?.code === "AI_NOT_CONFIGURED") {
+      return res.status(503).json({ message: err.message });
+    }
+
+    if (["AI_TEMPORARILY_UNAVAILABLE", "AI_TIMEOUT"].includes(err?.code) || [429, 503, 504].includes(err?.status)) {
+      console.error("Gemini availability error:", {
+        message: err.message,
+        attemptedModels: err.attemptedModels || [],
+      });
+      return res.status(503).json({
+        message: "Aura AI is temporarily slow or busy. The available Gemini models were tried automatically; please try again in a moment.",
+      });
+    }
+
+    if (err?.status === 400) {
+      console.error("Gemini request configuration error:", {
+        message: err.message,
+        attemptedModels: err.attemptedModels || [],
+      });
+      return res.status(502).json({
+        message: "Aura AI sent a request Gemini rejected. The backend request format needs checking.",
+      });
+    }
+
+    if ([401, 403].includes(err?.status)) {
+      console.error("Gemini authentication error:", err.message);
+      return res.status(502).json({
+        message: "Gemini rejected the API key or project permissions. Check GEMINI_API_KEY in server/.env.",
+      });
+    }
+
+    if (err?.status === 404) {
+      console.error("Gemini model error:", {
+        message: err.message,
+        attemptedModels: err.attemptedModels || [],
+      });
+      return res.status(502).json({
+        message: "The configured Gemini model is not available to this API project. Check GEMINI_MODEL / fallback models.",
+      });
+    }
+
+    if (err?.code === "AI_INVALID_RESPONSE" || err?.status === 502) {
+      console.error("Gemini response error:", err.message);
+      return res.status(502).json({
+        message: "Aura AI received an unusable response from Gemini. Please try again.",
+      });
+    }
+
+    return next(err);
+  }
+});
 
 const firstImage = (product) =>
   (Array.isArray(product.images) && product.images[0]) ||
@@ -56,12 +220,12 @@ const suggestionChips = (extra = []) => ({
 });
 
 async function featuredBlock() {
-  let items = await Product.find({ isFeatured: true, countInStock: { $gt: 0 } })
+  let items = await Product.find({ isFeatured: true, countInStock: { $gt: 0 }, isActive: { $ne: false } })
     .sort({ rating: -1, numReviews: -1, createdAt: -1 })
     .limit(8)
     .lean();
   if (!items.length) {
-    items = await Product.find({ countInStock: { $gt: 0 } })
+    items = await Product.find({ countInStock: { $gt: 0 }, isActive: { $ne: false } })
       .sort({ rating: -1, numReviews: -1, createdAt: -1 })
       .limit(8)
       .lean();
@@ -72,7 +236,7 @@ async function featuredBlock() {
 }
 
 async function productsBlock(filter, title, badge = "") {
-  const items = await Product.find({ ...filter, countInStock: { $gt: 0 } })
+  const items = await Product.find({ ...filter, countInStock: { $gt: 0 }, isActive: { $ne: false } })
     .sort({ rating: -1, numReviews: -1, price: 1 })
     .limit(8)
     .lean();
@@ -144,6 +308,7 @@ router.post("/chat", async (req, res, next) => {
       .map((item) => item._id);
     const items = await Product.find({
       countInStock: { $gt: 0 },
+      isActive: { $ne: false },
       $or: [
         { name: regex },
         { brand: regex },
@@ -283,6 +448,7 @@ router.post("/gift", async (req, res, next) => {
 
     const filter = {
       countInStock: { $gt: 0 },
+      isActive: { $ne: false },
       ...(categoryIds.length ? { category: { $in: categoryIds } } : {}),
       ...(budgetMax ? { price: { $lte: budgetMax } } : {}),
       ...(minRating ? { rating: { $gte: minRating } } : {}),
@@ -298,6 +464,7 @@ router.post("/gift", async (req, res, next) => {
     if (candidates.length < size) {
       const fallback = {
         countInStock: { $gt: 0 },
+        isActive: { $ne: false },
         ...(budgetMax ? { price: { $lte: budgetMax } } : {}),
         ...(excludeIds.length ? { _id: { $nin: excludeIds } } : {}),
       };
@@ -325,12 +492,12 @@ router.post("/compare", async (req, res, next) => {
     const productId = String(req.body?.productId || "");
     if (!isObjectId(productId)) return res.status(400).json({ message: "A valid productId is required." });
 
-    const base = await Product.findById(productId).lean();
+    const base = await Product.findOne({ _id: productId, isActive: { $ne: false } }).lean();
     if (!base) return res.status(404).json({ message: "Product not found." });
 
     const brand = String(base.brand || "").trim();
     const brandRegex = brand ? new RegExp(`^\\s*${escapeRegex(brand)}\\s*$`, "i") : null;
-    const common = { _id: { $ne: base._id }, countInStock: { $gt: 0 }, ...(base.category ? { category: base.category } : {}) };
+    const common = { _id: { $ne: base._id }, countInStock: { $gt: 0 }, isActive: { $ne: false }, ...(base.category ? { category: base.category } : {}) };
 
     const [sameBrand, otherBrands] = await Promise.all([
       brandRegex

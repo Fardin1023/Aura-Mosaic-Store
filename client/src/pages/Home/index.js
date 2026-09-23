@@ -5,7 +5,6 @@ import banner1 from "../../assets/images/banner1.png";
 import banner2 from "../../assets/images/banner2.png";
 import banner3 from "../../assets/images/banner3.png";
 import banner4 from "../../assets/images/banner4.png";
-import news from "../../assets/images/news.png";
 import Button from "@mui/material/Button";
 import { FaArrowRightLong } from "react-icons/fa6";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -17,6 +16,12 @@ import { IoMailUnreadOutline } from "react-icons/io5";
 import { Link, useNavigate } from "react-router-dom";
 import { MyContext } from "../../App";
 
+const discoveryCards = [
+  { title: "Soft-glow skincare", kicker: "Self-care", image: banner1, to: "/listing/Skincare", emoji: "🫧" },
+  { title: "Colorful handmade finds", kicker: "Made with heart", image: banner2, to: "/listing/Handcraft", emoji: "🎨" },
+  { title: "Thoughtful little gifts", kicker: "Just because", image: banner3, to: "/gifting", emoji: "🎁" },
+];
+
 const Home = () => {
   const { wishlist, user, openLoginGate } = useContext(MyContext);
   const navigate = useNavigate();
@@ -27,31 +32,34 @@ const Home = () => {
   const [newsletterStatus, setNewsletterStatus] = useState("");
   const [newsletterLoading, setNewsletterLoading] = useState(false);
 
-
   useEffect(() => {
     const load = async () => {
       try {
-        // fetch both blocks together
         const [featuredRes, newestRes] = await Promise.all([
-          getFeaturedProducts(6),
+          getFeaturedProducts(8),
           searchProducts({ sort: "newest", page: 1, limit: 8 }),
         ]);
-
         setFeaturedProducts(Array.isArray(featuredRes.data) ? featuredRes.data : []);
         setNewProducts(Array.isArray(newestRes.data?.items) ? newestRes.data.items : []);
       } catch (e) {
         console.error("Home load error:", e);
       }
     };
-
     load();
   }, []);
 
-  // 🔐 intercept gifting CTA
   const handleGiftingClick = async (e) => {
     if (!user) {
       e.preventDefault();
-      const go = await openLoginGate("Gifting Studio is for members. Sign in to try it!");
+      const go = await openLoginGate("AI Gift Studio is for members. Sign in to make a personalized gift!");
+      if (go) navigate("/register");
+    }
+  };
+
+  const handleWishlistClick = async (e) => {
+    if (!user) {
+      e.preventDefault();
+      const go = await openLoginGate("Sign in to save and revisit your favorite finds.");
       if (go) navigate("/register");
     }
   };
@@ -60,178 +68,128 @@ const Home = () => {
     <>
       <HomeBanner />
 
-      {/* ================================
-           Gifting Studio CTA (new)
-         ================================ */}
-      <section className="container" style={{ marginTop: 18, marginBottom: 18 }}>
-        <div
-          style={{
-            position: "relative",
-            borderRadius: 16,
-            padding: "18px 20px",
-            background:
-              "linear-gradient(135deg, rgba(255,77,109,0.12), rgba(107,255,181,0.12))",
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              background:
-                "radial-gradient(600px 200px at -10% 50%, rgba(255,77,109,0.10), transparent 60%), radial-gradient(600px 200px at 110% 50%, rgba(107,255,181,0.10), transparent 60%)",
-            }}
-          />
-          <div style={{ position: "relative", zIndex: 1, flex: 1 }}>
-            <div
-              style={{
-                fontSize: 12,
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                opacity: 0.8,
-                marginBottom: 4,
-              }}
-            >
-              🎁 New
-            </div>
-            <h3 style={{ margin: 0, lineHeight: 1.25 }}>
-              Try <span style={{ color: "#ff4d6d" }}>Gifting Studio</span> — personalized bundles for your special ones
-            </h3>
-            <p style={{ margin: "6px 0 0 0", opacity: 0.8 }}>
-              Answer a few quick questions and get single-item or 2–3 product suggestions
-              based on taste, relation, and budget.
-            </p>
+      <section className="container home-perk-strip" aria-label="Aura Mosaic benefits">
+        <div><span>✨</span><strong>AI-powered picks</strong><small>Smarter shopping, less scrolling</small></div>
+        <div><span>🎁</span><strong>Gift Studio</strong><small>Prompt-to-present in a few taps</small></div>
+        <div><span>💗</span><strong>Curated with care</strong><small>Fun finds for every mood</small></div>
+        <div><span>🚚</span><strong>Cash on Delivery</strong><small>Simple, familiar checkout</small></div>
+      </section>
+
+      <section className="container home-gift-spotlight">
+        <div className="home-gift-copy">
+          <span className="home-section-kicker">🎀 Aura AI Gift Studio</span>
+          <h2>Turn a few words into a gift that feels personal.</h2>
+          <p>Tell Aura who it’s for, the occasion, the vibe and your budget. It builds real gift bundles using products that are actually in stock.</p>
+          <div className="home-gift-actions">
+            <Link to="/gifting" onClick={handleGiftingClick} className="aura-btn aura-btn-primary">Create a gift <FaArrowRightLong /></Link>
+            <Link to="/ai-studio" className="aura-btn aura-btn-ghost">Ask Aura AI</Link>
           </div>
-          <div style={{ position: "relative", zIndex: 1 }}>
-            <Link to="/gifting" onClick={handleGiftingClick}>
-              <Button className="btn-blue btn-lg" style={{ borderRadius: 999 }}>
-                Start Gifting <FaArrowRightLong style={{ marginLeft: 8 }} />
-              </Button>
-            </Link>
+        </div>
+        <div className="home-gift-art" aria-hidden="true">
+          <span className="gift-orb gift-orb-a">🎁</span>
+          <span className="gift-orb gift-orb-b">🌷</span>
+          <span className="gift-orb gift-orb-c">✨</span>
+          <div className="gift-card-stack">
+            <img src={banner4} alt="" />
           </div>
         </div>
       </section>
 
-      <section className="homeProducts ">
+      <section className="home-section home-featured-section">
         <div className="container">
-          <div className="row">
-            {/* Left Banners */}
-            <div className="col-md-3">
-              <div className="sticky">
-                <div className="banner">
-                  <img src={banner1} alt="banner" className="cursor w-100" />
-                </div>
-                <div className="banner mt-4">
-                  <img src={banner2} alt="banner" className="cursor w-100" />
-                </div>
-              </div>
+          <div className="home-section-heading">
+            <div>
+              <span className="home-section-kicker">Loved right now</span>
+              <h2>Featured little luxuries</h2>
+              <p>Pretty, practical and hand-picked from the live Aura-Mosaic catalogue.</p>
             </div>
+            <div className="home-section-actions">
+              <Link to="/wishlist" onClick={handleWishlistClick} className="home-wishlist-pill">💖 Saved ({wishlist.length})</Link>
+              <Link to="/listing/All" className="home-view-link">See everything <FaArrowRightLong /></Link>
+            </div>
+          </div>
 
-            {/* Right Side Products */}
-            <div className="col-md-9 productRow">
-              {/* quick access to Wishlist */}
-              <div className="d-flex justify-content-end mb-3">
-                <Link
-                  to="/wishlist"
-                  onClick={(e) => {
-                    if (!user) {
-                      e.preventDefault();
-                      openLoginGate("Sign in to view your wishlist.").then((go) => {
-                        if (go) navigate("/register");
-                      });
-                    }
-                  }}
-                >
-                  <Button className="viewAllBtn">❤️ My Wishlist ({wishlist.length})</Button>
-                </Link>
-              </div>
-
-              {/* BEST SELLERS */}
-              <div className="d-flex align-items-center">
-                <div className="info w-75">
-                  <h3 className="mb-0 hd">FEATURED PRODUCTS</h3>
-                  <p className="text-light text-sml mb-0 text-dark">
-                    Curated products currently highlighted by Aura Mosaic
-                  </p>
-                </div>
-                {/* View All -> All products listing */}
-                <Link to="/listing/All" className="ml-auto">
-                  <Button className="viewAllBtn">
-                    View All <FaArrowRightLong />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="product_row w-100 mt-4">
-                <Swiper
-                  slidesPerView={1}
-                  breakpoints={{
-                    576: { slidesPerView: 2 },
-                    768: { slidesPerView: 3 },
-                    1200: { slidesPerView: 4 },
-                  }}
-                  spaceBetween={10}
-                  navigation
-                  modules={[Navigation]}
-                  className="mySwiper"
-                >
-                  {featuredProducts.map((product) => (
-                    <SwiperSlide key={product._id || product.id}>
-                      <ProductItem product={product} />
-                    </SwiperSlide>
-                  ))}
-                </Swiper>
-              </div>
-
-              {/* NEW PRODUCTS */}
-              <div className="d-flex align-items-center mt-5">
-                <div className="info w-75">
-                  <h3 className="mb-0 hd">NEW PRODUCTS</h3>
-                  <p className="text-light text-sml mb-0 text-dark">
-                    New products with updated stocks{" "}
-                  </p>
-                </div>
-                {/* View All -> All products listing */}
-                <Link to="/listing/All" className="ml-auto">
-                  <Button className="viewAllBtn">
-                    View All <FaArrowRightLong />
-                  </Button>
-                </Link>
-              </div>
-              <div className="product_row productRow2 w-100 mt-4 d-flex">
-                {newProducts.map((product) => (
-                  <ProductItem key={product._id || product.id} product={product} />
+          {featuredProducts.length ? (
+            <div className="product_row home-product-slider">
+              <Swiper
+                slidesPerView={1.15}
+                breakpoints={{
+                  520: { slidesPerView: 2.15 },
+                  768: { slidesPerView: 3 },
+                  1100: { slidesPerView: 4 },
+                }}
+                spaceBetween={18}
+                navigation
+                modules={[Navigation]}
+                className="mySwiper"
+              >
+                {featuredProducts.map((product) => (
+                  <SwiperSlide key={product._id || product.id}>
+                    <ProductItem product={product} />
+                  </SwiperSlide>
                 ))}
-              </div>
-
-              {/* Bottom Banners */}
-              <div className="d-flex mt-4 mb-5 bannerSec">
-                <div className="banner">
-                  <img src={banner3} alt="banner3" className="cursor w-100" />
-                </div>
-                <div className="banner">
-                  <img src={banner4} alt="banner4" className="cursor w-100" />
-                </div>
-              </div>
+              </Swiper>
             </div>
-          </div>
+          ) : (
+            <div className="home-empty-state">✨ Featured picks will appear here as your catalogue grows.</div>
+          )}
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="newsLetterSection mt-3 mb-3 d-flex align-items-center">
+      <section className="container home-discover-section">
+        <div className="home-section-heading compact">
+          <div>
+            <span className="home-section-kicker">Pick your vibe</span>
+            <h2>Shop by mood</h2>
+          </div>
+        </div>
+        <div className="home-discover-grid">
+          {discoveryCards.map((card) => (
+            <Link to={card.to} onClick={card.to === "/gifting" ? handleGiftingClick : undefined} className="home-discover-card" key={card.title}>
+              <img src={card.image} alt="" />
+              <span className="home-discover-overlay" />
+              <div className="home-discover-copy">
+                <span>{card.emoji} {card.kicker}</span>
+                <h3>{card.title}</h3>
+                <em>Explore <FaArrowRightLong /></em>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="home-section home-new-section">
         <div className="container">
-          <div className="row">
-            <div className="col-md-6">
-              <p className="text-white mb-1">Stay in the loop</p>
-              <h3 className="text-white">Join the Aura Mosaic newsletter</h3>
-              <p className="text-light">
-                Subscribe for product updates and store announcements.
-              </p>
+          <div className="home-section-heading">
+            <div>
+              <span className="home-section-kicker">Freshly added</span>
+              <h2>New & noteworthy</h2>
+              <p>The newest products and restocks from your live catalogue.</p>
+            </div>
+            <Link to="/listing/New%20Arrivals" className="home-view-link">View new arrivals <FaArrowRightLong /></Link>
+          </div>
+
+          {newProducts.length ? (
+            <div className="productRow2 home-product-grid">
+              {newProducts.map((product) => (
+                <ProductItem key={product._id || product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="home-empty-state">🌼 Add products from the Admin Dashboard and they’ll bloom here.</div>
+          )}
+        </div>
+      </section>
+
+      <section className="newsLetterSection home-newsletter">
+        <div className="container">
+          <div className="home-newsletter-inner">
+            <div className="home-newsletter-copy">
+              <span className="home-section-kicker">💌 Happy mail</span>
+              <h2>New drops, cute finds & gifting inspiration.</h2>
+              <p>Join the Aura list for product updates and store announcements — no boring inbox clutter.</p>
+            </div>
+            <div className="home-newsletter-form-wrap">
               <form
                 onSubmit={async (event) => {
                   event.preventDefault();
@@ -250,22 +208,10 @@ const Home = () => {
                 }}
               >
                 <IoMailUnreadOutline />
-                <input
-                  type="email"
-                  value={newsletterEmail}
-                  onChange={(event) => setNewsletterEmail(event.target.value)}
-                  placeholder="Your email"
-                  aria-label="Newsletter email"
-                  required
-                />
-                <Button type="submit" disabled={newsletterLoading}>
-                  {newsletterLoading ? "Subscribing…" : "Subscribe"}
-                </Button>
+                <input type="email" value={newsletterEmail} onChange={(event) => setNewsletterEmail(event.target.value)} placeholder="you@example.com" required />
+                <Button type="submit" disabled={newsletterLoading}>{newsletterLoading ? "Joining…" : "Join the list"}</Button>
               </form>
-              {newsletterStatus && <p className="text-light mt-2 mb-0">{newsletterStatus}</p>}
-            </div>
-            <div className="col-md-6">
-              <img src={news} alt="news" />
+              {newsletterStatus && <p className="home-newsletter-status">{newsletterStatus}</p>}
             </div>
           </div>
         </div>

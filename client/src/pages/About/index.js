@@ -1,33 +1,25 @@
 const About = () => {
   return (
-    <section className="section">
+    <section className="section aura-simple-page about-page">
       <div className="container">
-        <h2 className="hd mb-3">About Aura Mosaic</h2>
-        <p className="text-muted">
-          We’re a community-first marketplace for skincare, handcrafts, and plants.
-          Our mission is to make everyday self-care and sustainable living simple,
-          affordable, and delightful.
-        </p>
+        <div className="aura-page-hero">
+          <span className="home-section-kicker">🌈 Meet Aura-Mosaic</span>
+          <h1>Shopping should feel like finding a little treasure.</h1>
+          <p>We bring together self-care, handcrafted pieces, playful finds and smart AI tools so discovering something lovely feels easy, personal and fun.</p>
+        </div>
 
-        <div className="row mt-4">
-          <div className="col-md-4">
-            <div className="card p-3 shadow-sm border-0">
-              <h5>Quality First</h5>
-              <p className="mb-0">Curated products from trusted brands & makers.</p>
-            </div>
+        <div className="about-value-grid">
+          <article className="aura-info-card"><span>💖</span><h3>Curated with care</h3><p>We’d rather show you thoughtful products than drown you in endless options.</p></article>
+          <article className="aura-info-card"><span>🎨</span><h3>Made for personality</h3><p>Color, creativity and individuality are part of the Aura-Mosaic mood.</p></article>
+          <article className="aura-info-card"><span>✨</span><h3>AI that actually helps</h3><p>Aura AI works with real store data to recommend, compare and build gift ideas.</p></article>
+        </div>
+
+        <div className="about-story-card">
+          <div>
+            <span className="home-section-kicker">Our vibe</span>
+            <h2>Soft, smart, cheerful shopping.</h2>
           </div>
-          <div className="col-md-4">
-            <div className="card p-3 shadow-sm border-0">
-              <h5>Local Makers</h5>
-              <p className="mb-0">Support artisans and small businesses near you.</p>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card p-3 shadow-sm border-0">
-              <h5>Eco-friendly</h5>
-              <p className="mb-0">Packaging and partners we’re proud of.</p>
-            </div>
-          </div>
+          <p>Aura-Mosaic is designed for shoppers who enjoy beautiful things but still want practical information: real stock, clear prices, helpful recommendations and a simple checkout. We’re building a marketplace where technology feels warm, not complicated.</p>
         </div>
       </div>
     </section>

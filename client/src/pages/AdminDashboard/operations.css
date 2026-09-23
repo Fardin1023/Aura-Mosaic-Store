@@ -1,0 +1,20 @@
+.admin-ops-header { margin-bottom: 18px; }
+.admin-ops-tabs { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.admin-ops-tabs button { border:1px solid #d7e5dc; background:#fff; border-radius:999px; padding:8px 14px; cursor:pointer; }
+.admin-ops-tabs button.active { background:#16794f; color:#fff; border-color:#16794f; }
+.admin-danger-link { border:0; background:transparent; color:#b42318; cursor:pointer; font-weight:600; padding:4px 6px; }
+.admin-ops-message { max-width:420px; white-space:normal; }
+.admin-ops-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px; }
+.admin-ops-summary article { background:#fff; border:1px solid #e4ece7; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:4px; }
+.admin-ops-summary span,.admin-ops-summary small { color:#637068; }
+.admin-ops-summary strong { font-size:20px; }
+.admin-ops-settings { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.admin-ops-settings label { display:flex; flex-direction:column; gap:6px; font-weight:600; }
+.admin-ops-settings input,.admin-ops-settings textarea { border:1px solid #d5e0d9; border-radius:10px; padding:10px 12px; font:inherit; }
+.admin-ops-settings textarea { min-height:90px; resize:vertical; }
+.admin-ops-wide { grid-column:1 / -1; }
+.admin-ops-checkbox { flex-direction:row !important; align-items:center; font-weight:500 !important; }
+@media (max-width:760px){ .admin-ops-settings{grid-template-columns:1fr;} .admin-ops-wide{grid-column:auto;} }
+
+/* Theme-aware admin operations */
+.admin-ops-tabs button{border-color:var(--am-border)!important;background:#fff!important;color:var(--am-ink)!important;font-weight:900}.admin-ops-tabs button.active{background:var(--am-gradient)!important;color:#fff!important;border-color:transparent!important}.admin-ops-summary article{border-color:var(--am-border)!important;border-radius:18px!important;background:var(--am-gradient-soft)!important}.admin-ops-summary strong{color:var(--am-ink)!important}.admin-ops-summary span,.admin-ops-summary small{color:var(--am-muted)!important}.admin-ops-settings input,.admin-ops-settings textarea{border-color:var(--am-border)!important;border-radius:13px!important;background:color-mix(in srgb,var(--am-bg) 70%,white)!important;color:var(--am-ink)!important}.admin-ops-settings input:focus,.admin-ops-settings textarea:focus{border-color:var(--am-primary)!important;box-shadow:0 0 0 3px color-mix(in srgb,var(--am-primary) 10%,transparent)!important;outline:0}.admin-danger-link{color:#c73d55!important}

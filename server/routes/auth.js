@@ -70,6 +70,9 @@ router.post("/login", async (req, res, next) => {
     if (!user || !user.password) {
       return res.status(401).json({ message: "Invalid email or password." });
     }
+    if (user.isActive === false) {
+      return res.status(403).json({ message: "This account has been disabled. Please contact support." });
+    }
 
     const matches = await bcrypt.compare(password, user.password);
     if (!matches) return res.status(401).json({ message: "Invalid email or password." });
@@ -124,6 +127,10 @@ router.post("/google", async (req, res, next) => {
       if (changed) await user.save();
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({ message: "This account has been disabled. Please contact support." });
+    }
+
     return res.json({ token: sign(user), isNewUser, user: serializeUser(user) });
   } catch (err) {
     if (/Token used too late|Wrong recipient|Invalid token signature|Invalid Value/i.test(String(err?.message || ""))) {
@@ -137,6 +144,7 @@ router.get("/me", auth, async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id).select("-wishlist").lean();
     if (!user) return res.status(404).json({ message: "User not found." });
+    if (user.isActive === false) return res.status(403).json({ message: "This account has been disabled." });
 
     const rows = await Transaction.aggregate([
       { $match: { user: new mongoose.Types.ObjectId(req.user.id), status: "PAID" } },

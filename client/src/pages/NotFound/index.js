@@ -1,11 +1,15 @@
 import { Link } from "react-router-dom";
 
 const NotFound = () => (
-  <section className="section">
-    <div className="container text-center" style={{ padding: "80px 0" }}>
-      <h2>Page not found</h2>
-      <p className="text-muted">The page you requested does not exist.</p>
-      <Link to="/" className="btn btn-primary">Back to Home</Link>
+  <section className="section aura-not-found">
+    <div className="container text-center">
+      <div className="not-found-card">
+        <div className="not-found-emoji">🫧</div>
+        <span className="home-section-kicker">Oops, tiny detour</span>
+        <h1>That page wandered off.</h1>
+        <p>Nothing scary — let’s get you back to the colorful part of Aura-Mosaic.</p>
+        <Link to="/" className="aura-btn aura-btn-primary">Back to home ✨</Link>
+      </div>
     </div>
   </section>
 );

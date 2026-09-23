@@ -22,6 +22,7 @@ import History from "./pages/History";
 import Gifting from "./pages/Gifting";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import AIStudio from "./pages/AIStudio";
 import {
   addWishlistItem,
   getCities,
@@ -313,6 +314,18 @@ function AppContent() {
   return (
     <MyContext.Provider value={values}>
       {isHeaderFooterShow && <Header />}
+      {!isHeaderFooterShow && (
+        <button
+          type="button"
+          className="auth-theme-fab"
+          onClick={() => setTheme(theme === "theme-green" ? "theme-pink" : "theme-green")}
+          aria-label="Toggle color theme"
+          title={theme === "theme-green" ? "Switch to Berry Bloom" : "Switch to Mint Pop"}
+        >
+          <span>{theme === "theme-green" ? "🍬" : "🌷"}</span>
+          <strong>{theme === "theme-green" ? "Mint Pop" : "Berry Bloom"}</strong>
+        </button>
+      )}
 
       {showSideRails && (
         <>
@@ -335,6 +348,7 @@ function AppContent() {
         <Route path="/listing/:category" element={<ProductListing />} />
         <Route path="/search" element={<ProductListing />} />
         <Route path="/gifting" element={<RequireAuth><Gifting /></RequireAuth>} />
+        <Route path="/ai-studio" element={<RequireAuth><AIStudio /></RequireAuth>} />
         <Route path="/register" element={<Auth />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />

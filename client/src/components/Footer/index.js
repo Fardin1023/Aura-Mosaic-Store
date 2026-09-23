@@ -3,68 +3,63 @@ import { MdDeliveryDining } from "react-icons/md";
 import { RiDiscountPercentFill } from "react-icons/ri";
 import { IoIosPricetags } from "react-icons/io";
 import { Link } from "react-router-dom";
+import logo from "../../assets/images/logo.png";
 
 const Footer = () => {
   return (
-    <footer>
+    <footer className="site-footer">
       <div className="container">
-        <div className="topInfo row">
-          <div className="col d-flex align-items-center">
-            <span><GiPlantSeed /></span>
-            <span className="ml-2">Curated products</span>
+        <div className="topInfo footer-perks">
+          <div><span><GiPlantSeed /></span><div><strong>Curated joy</strong><small>Thoughtful finds, not endless clutter</small></div></div>
+          <div><span><MdDeliveryDining /></span><div><strong>Easy delivery</strong><small>Simple checkout with COD</small></div></div>
+          <div><span><RiDiscountPercentFill /></span><div><strong>Clear totals</strong><small>No mystery at checkout</small></div></div>
+          <div><span><IoIosPricetags /></span><div><strong>Live catalogue</strong><small>Fresh stock and real prices</small></div></div>
+        </div>
+
+        <div className="footer-main">
+          <div className="footer-brand">
+            <Link to="/" className="footer-logo-link">
+              <img src={logo} alt="Aura-Mosaic" />
+              <span>Aura-Mosaic</span>
+            </Link>
+            <p>A cheerful little marketplace for self-care, creative finds, thoughtful gifts and AI-assisted shopping.</p>
+            <div className="footer-mood-pills"><span>🌷 Lovely</span><span>🌈 Playful</span><span>✨ Smart</span></div>
           </div>
-          <div className="col d-flex align-items-center">
-            <span><MdDeliveryDining /></span>
-            <span className="ml-2">Free delivery on orders ৳500+</span>
-          </div>
-          <div className="col d-flex align-items-center">
-            <span><RiDiscountPercentFill /></span>
-            <span className="ml-2">Transparent order totals</span>
-          </div>
-          <div className="col d-flex align-items-center">
-            <span><IoIosPricetags /></span>
-            <span className="ml-2">Fresh inventory updates</span>
+
+          <div className="footer-links-grid linksWrap">
+            <div>
+              <h5>Explore</h5>
+              <ul>
+                <li><Link to="/">Home</Link></li>
+                <li><Link to="/listing/All">All products</Link></li>
+                <li><Link to="/listing/New%20Arrivals">New arrivals</Link></li>
+                <li><Link to="/wishlist">Wishlist</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h5>AI magic</h5>
+              <ul>
+                <li><Link to="/gifting">AI Gift Studio</Link></li>
+                <li><Link to="/ai-studio">Aura AI Studio</Link></li>
+                <li><Link to="/history">My orders</Link></li>
+                <li><Link to="/cart">My cart</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h5>Aura</h5>
+              <ul>
+                <li><Link to="/about">About us</Link></li>
+                <li><Link to="/contact">Contact</Link></li>
+                <li><Link to="/listing/Skincare">Skincare</Link></li>
+                <li><Link to="/listing/Handcraft">Handcrafts</Link></li>
+              </ul>
+            </div>
           </div>
         </div>
 
-        <div className="row mt-5 linksWrap">
-          <div className="col">
-            <h5>AURA MOSAIC</h5>
-            <ul>
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/about">About Us</Link></li>
-              <li><Link to="/contact">Contact Us</Link></li>
-            </ul>
-          </div>
-          <div className="col">
-            <h5>SHOP</h5>
-            <ul>
-              <li><Link to="/listing/All">All Products</Link></li>
-              <li><Link to="/search">Search</Link></li>
-              <li><Link to="/wishlist">Wishlist</Link></li>
-              <li><Link to="/cart">Cart</Link></li>
-            </ul>
-          </div>
-          <div className="col">
-            <h5>DISCOVER</h5>
-            <ul>
-              <li><Link to="/gifting">Gifting Studio</Link></li>
-              <li><Link to="/history">Order History</Link></li>
-            </ul>
-          </div>
-          <div className="col">
-            <h5>POPULAR CATEGORIES</h5>
-            <ul>
-              <li><Link to="/search?q=skincare">Skincare</Link></li>
-              <li><Link to="/search?q=plants">Plants</Link></li>
-              <li><Link to="/search?q=handcraft">Handcrafts</Link></li>
-              <li><Link to="/search?q=home%20decor">Home Décor</Link></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="copyright mt-3 pb-3 pt-3 d-flex">
-          <p className="mb-0">© {new Date().getFullYear()} Aura Mosaic — Where creativity meets craftsmanship.</p>
+        <div className="copyright">
+          <p>© {new Date().getFullYear()} Aura-Mosaic. Made for colorful carts & thoughtful hearts.</p>
+          <span>Theme it your way 🍬 🌷</span>
         </div>
       </div>
     </footer>

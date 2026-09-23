@@ -75,7 +75,7 @@ const Header = () => {
         <div className="top-strip bg-cyan">
           <div className="container">
             <p className="mb-0 mt-0 text-center">
-              Curated products, secure accounts, and Cash on Delivery checkout.
+              ✨ Little joys, lovely finds & AI-made gifts — curated for every mood.
             </p>
           </div>
         </div>
@@ -104,6 +104,16 @@ const Header = () => {
 
                   {/* Search (flexes to fill) */}
                   <SearchBox />
+
+                  <Link
+                    to="/ai-studio"
+                    className="aiLaunchBtn"
+                    title="Aura AI Studio"
+                    aria-label="Open Aura AI Studio"
+                  >
+                    <span className="aiLaunchIcon">✨</span>
+                    <span className="aiLaunchCopy">Aura AI</span>
+                  </Link>
 
                   {/* Right actions */}
                   <div className="hStack">
@@ -181,16 +191,17 @@ const Header = () => {
 
                     {/* Theme toggle */}
                     <button
-                      className="iconBtn themeToggler"
+                      className="themeToggler"
                       onClick={toggleTheme}
-                      title={
-                        theme === "theme-green"
-                          ? "Switch to Pink"
-                          : "Switch to Green"
-                      }
+                      title={theme === "theme-green" ? "Switch to Berry Bloom" : "Switch to Mint Pop"}
                       aria-label="Toggle color theme"
+                      aria-pressed={theme === "theme-pink"}
                     >
-                      {theme === "theme-green" ? "🌿" : "🌸"}
+                      <span className="themeTogglerIcon">{theme === "theme-green" ? "🍬" : "🌷"}</span>
+                      <span className="themeTogglerCopy">
+                        <strong>{theme === "theme-green" ? "Mint Pop" : "Berry Bloom"}</strong>
+                        <small>Theme</small>
+                      </span>
                     </button>
                   </div>
                 </div>

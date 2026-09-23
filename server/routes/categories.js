@@ -45,6 +45,9 @@ router.post("/", auth, admin, async (req, res, next) => {
     const name = cleanString(req.body?.name, 120);
     if (name.length < 2) return res.status(400).json({ message: "Category name is required." });
 
+    const exists = await Category.exists({ name: { $regex: `^${escapeRegex(name)}$`, $options: "i" } });
+    if (exists) return res.status(409).json({ message: "A category with that name already exists." });
+
     const category = await Category.create({
       name,
       color: cleanString(req.body?.color || "default", 80),
@@ -61,7 +64,12 @@ router.patch("/:id", auth, admin, async (req, res, next) => {
   try {
     if (!isObjectId(req.params.id)) return res.status(400).json({ message: "Invalid category id." });
     const update = {};
-    if ("name" in req.body) update.name = cleanString(req.body.name, 120);
+    if ("name" in req.body) {
+      update.name = cleanString(req.body.name, 120);
+      if (update.name.length < 2) return res.status(400).json({ message: "Category name is required." });
+      const duplicate = await Category.exists({ _id: { $ne: req.params.id }, name: { $regex: `^${escapeRegex(update.name)}$`, $options: "i" } });
+      if (duplicate) return res.status(409).json({ message: "A category with that name already exists." });
+    }
     if ("color" in req.body) update.color = cleanString(req.body.color, 80);
     if ("icon" in req.body) update.icon = cleanString(req.body.icon, 500);
     if (Array.isArray(req.body?.images)) update.images = req.body.images.map((v) => cleanString(v, 1000)).filter(Boolean);
@@ -95,6 +103,9 @@ router.post("/:categoryId/subcategories", auth, admin, async (req, res, next) =>
     if (!name) return res.status(400).json({ message: "Subcategory name is required." });
     const category = await Category.findById(req.params.categoryId);
     if (!category) return res.status(404).json({ message: "Category not found." });
+    if (category.subcategories.some((item) => String(item.name).toLowerCase() === name.toLowerCase())) {
+      return res.status(409).json({ message: "That subcategory already exists." });
+    }
     category.subcategories.push({ name });
     await category.save();
     return res.status(201).json(category.subcategories.at(-1));
@@ -111,6 +122,9 @@ router.patch("/:categoryId/subcategories/:subId", auth, admin, async (req, res, 
     if (!subcategory) return res.status(404).json({ message: "Subcategory not found." });
     const name = cleanString(req.body?.name, 120);
     if (!name) return res.status(400).json({ message: "Subcategory name is required." });
+    if (category.subcategories.some((item) => String(item._id) !== String(subcategory._id) && String(item.name).toLowerCase() === name.toLowerCase())) {
+      return res.status(409).json({ message: "That subcategory already exists." });
+    }
     subcategory.name = name;
     await category.save();
     return res.json(subcategory);

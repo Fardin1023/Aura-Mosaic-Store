@@ -6,7 +6,8 @@ module.exports = async (req, res, next) => {
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
 
   if (!token) {
-    return res.status(401).json({ message: "Authentication required." });
+    req.user = null;
+    return next();
   }
 
   try {
@@ -18,7 +19,7 @@ module.exports = async (req, res, next) => {
     }
     req.user = { id: String(user._id), role: user.role || "customer" };
     return next();
-  } catch (_err) {
+  } catch (_error) {
     return res.status(401).json({ message: "Session expired or invalid. Please sign in again." });
   }
 };

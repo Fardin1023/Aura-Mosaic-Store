@@ -22,6 +22,28 @@ const paymentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+const shippingAddressSchema = new mongoose.Schema(
+  {
+    name: { type: String, default: "", trim: true, maxlength: 120 },
+    phone: { type: String, default: "", trim: true, maxlength: 40 },
+    addressLine1: { type: String, default: "", trim: true, maxlength: 250 },
+    addressLine2: { type: String, default: "", trim: true, maxlength: 250 },
+    city: { type: String, default: "", trim: true, maxlength: 120 },
+    postalCode: { type: String, default: "", trim: true, maxlength: 30 },
+  },
+  { _id: false }
+);
+
+const statusHistorySchema = new mongoose.Schema(
+  {
+    status: { type: String, required: true },
+    changedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    note: { type: String, default: "", trim: true, maxlength: 500 },
+    at: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, index: true },
@@ -38,6 +60,10 @@ const orderSchema = new mongoose.Schema(
     },
     payment: { type: paymentSchema, default: () => ({}) },
     city: { type: String, default: "", trim: true },
+    shippingAddress: { type: shippingAddressSchema, default: () => ({}) },
+    trackingNumber: { type: String, default: "", trim: true, maxlength: 150 },
+    adminNote: { type: String, default: "", trim: true, maxlength: 2000 },
+    statusHistory: { type: [statusHistorySchema], default: [] },
     inventoryRestored: { type: Boolean, default: false, select: false },
   },
   { timestamps: true }

@@ -91,16 +91,16 @@ const OrderConfirmation = () => {
     : `${payment?.provider || payment?.method || "Payment"} • ${payment?.status || "PENDING"}`;
 
   return (
-    <section className="section">
+    <section className="section order-confirmation-page">
       <div className="container">
-        <div className="card p-4 shadow">
+        <div className="card p-4 shadow order-confirmation-card">
           <div className="d-flex align-items-center mb-3">
-            <div className="d-flex align-items-center justify-content-center mr-3" style={{ width: 48, height: 48, borderRadius: "50%", background: "#e8f5e9", fontSize: 24 }}>✅</div>
+            <div className="order-success-icon mr-3">✅</div>
             <div>
               <h3 className="mb-0">Your order has been placed.</h3>
               <small className="text-muted">Order ID <b>{order.id}</b>{createdAt ? ` • ${new Date(createdAt).toLocaleString()}` : ""}</small>
               <div className="mt-1 small text-uppercase">Status: <b>{status || "pending"}</b></div>
-              <div style={{ marginTop: 8, padding: "8px 10px", background: "#f8fffb", border: "1px solid #d7f2e3", borderRadius: 8 }}>
+              <div className="order-delivery-note">
                 🚚 Estimated delivery: <b>within 3 working days</b>.
               </div>
             </div>
