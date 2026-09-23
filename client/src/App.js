@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 import "bootstrap-4-react";
-import { createContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 import { IoHome } from "react-icons/io5";
 
@@ -21,6 +21,7 @@ import Wishlist from "./pages/Wishlist";
 import History from "./pages/History";
 import Gifting from "./pages/Gifting";
 import NotFound from "./pages/NotFound";
+import AdminDashboard from "./pages/AdminDashboard";
 import {
   addWishlistItem,
   getCities,
@@ -46,6 +47,49 @@ const normalizeCartItem = (product, qty = 1) => {
     qty: Math.max(1, Math.min(99, Math.floor(Number(qty) || 1))),
   };
 };
+
+function RequireAuth({ children }) {
+  const { authLoading, user, openLoginGate } = useContext(MyContext);
+  const [asked, setAsked] = useState(false);
+  const nav = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !user && !asked) {
+      setAsked(true);
+      openLoginGate("This page is for signed-in shoppers.").then((ok) => {
+        nav(ok ? "/register" : "/", { replace: true });
+      });
+    }
+  }, [asked, authLoading, nav, openLoginGate, user]);
+
+  if (authLoading || !user) return null;
+  return children;
+}
+
+function RequireAdmin({ children }) {
+  const { authLoading, user } = useContext(MyContext);
+  const nav = useNavigate();
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      nav("/register", { replace: true });
+      return;
+    }
+
+    if (user.role !== "admin") {
+      Swal.fire({
+        icon: "warning",
+        title: "Admin access required",
+        text: "This area is only available to Aura-Mosaic administrators.",
+      }).then(() => nav("/", { replace: true }));
+    }
+  }, [authLoading, nav, user]);
+
+  if (authLoading || !user || user.role !== "admin") return null;
+  return children;
+}
 
 function AppContent() {
   const [cityList, setCityList] = useState([]);
@@ -263,28 +307,14 @@ function AppContent() {
     };
   }, [offerLines.length, proverbLines.length]);
 
-  const RequireAuth = ({ children }) => {
-    const [asked, setAsked] = useState(false);
-    const nav = useNavigate();
-    useEffect(() => {
-      if (!authLoading && !user && !asked) {
-        setAsked(true);
-        openLoginGate("This page is for signed-in shoppers.").then((ok) => {
-          nav(ok ? "/register" : "/", { replace: true });
-        });
-      }
-    }, [asked, authLoading, nav]);
-    if (authLoading || !user) return null;
-    return children;
-  };
-
   const showHomeFab = location.pathname !== "/";
+  const showSideRails = isHeaderFooterShow && location.pathname !== "/admin";
 
   return (
     <MyContext.Provider value={values}>
       {isHeaderFooterShow && <Header />}
 
-      {isHeaderFooterShow && (
+      {showSideRails && (
         <>
           <div className="side-rail rail-left" aria-hidden>
             <div className="rail-inner">
@@ -313,6 +343,7 @@ function AppContent() {
         <Route path="/welcome" element={<RequireAuth><CompleteProfile /></RequireAuth>} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
 

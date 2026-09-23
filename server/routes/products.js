@@ -6,6 +6,7 @@ const Order = require("../models/order");
 const auth = require("../middleware/authMiddleware");
 const admin = require("../middleware/adminMiddleware");
 const { cleanString, escapeRegex, isObjectId, toNumber } = require("../utils/validation");
+const { createProductImageUploadSignature, destroyProductImageByUrl } = require("../utils/cloudinary");
 
 const router = express.Router();
 
@@ -31,6 +32,30 @@ async function linkSubcategory(productId, categoryId, subcategoryId) {
     await category.save();
   }
 }
+
+router.post("/admin/image-upload-signature", auth, admin, (req, res, next) => {
+  try {
+    return res.json(createProductImageUploadSignature());
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.delete("/admin/image-upload", auth, admin, async (req, res, next) => {
+  try {
+    const url = cleanString(req.body?.url, 1500);
+    if (!url) return res.status(400).json({ message: "Image URL is required." });
+
+    const result = await destroyProductImageByUrl(url);
+    if (result?.skipped) {
+      return res.status(400).json({ message: "That image is not a managed Aura Mosaic Cloudinary upload." });
+    }
+
+    return res.json({ message: "Uploaded image deleted." });
+  } catch (err) {
+    return next(err);
+  }
+});
 
 router.get("/", async (req, res, next) => {
   try {
@@ -302,6 +327,16 @@ async function validateProductPayload(payload, { partial = false } = {}) {
   }
   if (!partial || payload.images !== undefined) {
     if (!Array.isArray(payload.images) || payload.images.length === 0) return "At least one product image is required.";
+    if (payload.images.length > 6) return "A product can have at most 6 images.";
+    const invalidImage = payload.images.some((value) => {
+      try {
+        const url = new URL(value);
+        return !["http:", "https:"].includes(url.protocol);
+      } catch (_error) {
+        return true;
+      }
+    });
+    if (invalidImage) return "Every product image must be a valid HTTP or HTTPS URL.";
   }
   return "";
 }
@@ -327,11 +362,20 @@ router.patch("/:id", auth, admin, async (req, res, next) => {
     const validationError = await validateProductPayload(payload, { partial: true });
     if (validationError) return res.status(400).json({ message: validationError });
 
+    const before = await Product.findById(req.params.id).lean();
+    if (!before) return res.status(404).json({ message: "Product not found." });
+
     const product = await Product.findByIdAndUpdate(req.params.id, payload, { new: true, runValidators: true });
-    if (!product) return res.status(404).json({ message: "Product not found." });
     if ("subcategoryId" in req.body || "category" in req.body) {
       await linkSubcategory(product._id, product.category, product.subcategory);
     }
+
+    if (Array.isArray(payload.images)) {
+      const retained = new Set(payload.images.map(String));
+      const removedImages = (before.images || []).filter((url) => !retained.has(String(url)));
+      await Promise.allSettled(removedImages.map((url) => destroyProductImageByUrl(url)));
+    }
+
     return res.json(await Product.findById(product._id).populate("category", "name").lean());
   } catch (err) {
     return next(err);
@@ -348,6 +392,7 @@ router.delete("/:id", auth, admin, async (req, res, next) => {
       { $pull: { "subcategories.$[].products": product._id } }
     );
     await User.updateMany({ wishlist: product._id }, { $pull: { wishlist: product._id } });
+    await Promise.allSettled((product.images || []).map((url) => destroyProductImageByUrl(url)));
     return res.json({ message: "Product deleted." });
   } catch (err) {
     return next(err);

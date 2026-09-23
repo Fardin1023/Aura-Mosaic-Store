@@ -1,13 +1,118 @@
 const express = require("express");
 const { User } = require("../models/user");
 const { Product } = require("../models/products");
+const Order = require("../models/order");
 const auth = require("../middleware/authMiddleware");
+const admin = require("../middleware/adminMiddleware");
 const { cleanString, isObjectId } = require("../utils/validation");
 const cities = require("../data/cities");
 
 const VALID_CITIES = new Set(cities.map((item) => item.name.toLowerCase()));
 
 const router = express.Router();
+
+function escapeRegex(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+router.get("/admin/customers", auth, admin, async (req, res, next) => {
+  try {
+    const search = cleanString(req.query?.q, 120);
+    const match = { role: "customer" };
+
+    if (search) {
+      const expression = new RegExp(escapeRegex(search), "i");
+      match.$or = [
+        { name: expression },
+        { email: expression },
+        { phone: expression },
+        { city: expression },
+      ];
+    }
+
+    const customers = await User.aggregate([
+      { $match: match },
+      {
+        $lookup: {
+          from: Order.collection.name,
+          let: { customerId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$user", "$$customerId"] } } },
+            {
+              $group: {
+                _id: null,
+                orderCount: { $sum: 1 },
+                totalSpent: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ["$payment.status", "PAID"] },
+                      "$total",
+                      0,
+                    ],
+                  },
+                },
+                lastOrderAt: { $max: "$createdAt" },
+              },
+            },
+          ],
+          as: "orderSummary",
+        },
+      },
+      {
+        $addFields: {
+          summary: { $arrayElemAt: ["$orderSummary", 0] },
+          wishlistCount: { $size: { $ifNull: ["$wishlist", []] } },
+        },
+      },
+      {
+        $project: {
+          name: 1,
+          email: 1,
+          phone: 1,
+          city: 1,
+          picture: 1,
+          provider: 1,
+          isProfileComplete: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          wishlistCount: 1,
+          orderCount: { $ifNull: ["$summary.orderCount", 0] },
+          totalSpent: { $ifNull: ["$summary.totalSpent", 0] },
+          lastOrderAt: "$summary.lastOrderAt",
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      { $limit: 500 },
+    ]);
+
+    return res.json(customers);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.get("/admin/customers/:id/orders", auth, admin, async (req, res, next) => {
+  try {
+    if (!isObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid customer id." });
+    }
+
+    const customer = await User.findOne({ _id: req.params.id, role: "customer" })
+      .select("name email phone city provider picture isProfileComplete createdAt")
+      .lean();
+
+    if (!customer) return res.status(404).json({ message: "Customer not found." });
+
+    const orders = await Order.find({ user: req.params.id })
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean();
+
+    return res.json({ customer, orders });
+  } catch (err) {
+    return next(err);
+  }
+});
 
 router.patch("/me", auth, async (req, res, next) => {
   try {

@@ -40,6 +40,24 @@ export const searchProducts = (params) => api.get("/products/search", { params }
 export const getRelatedProducts = (categoryId, excludeId) =>
   api.get(`/products/related/${categoryId}/${excludeId}`);
 
+
+// Admin catalogue management
+export const createCategory = (payload) => api.post("/categories", payload);
+export const updateCategory = (id, payload) => api.patch(`/categories/${id}`, payload);
+export const deleteCategory = (id) => api.delete(`/categories/${id}`);
+export const createSubcategory = (categoryId, payload) =>
+  api.post(`/categories/${categoryId}/subcategories`, payload);
+export const updateSubcategory = (categoryId, subcategoryId, payload) =>
+  api.patch(`/categories/${categoryId}/subcategories/${subcategoryId}`, payload);
+export const deleteSubcategory = (categoryId, subcategoryId) =>
+  api.delete(`/categories/${categoryId}/subcategories/${subcategoryId}`);
+export const createProduct = (payload) => api.post("/products", payload);
+export const updateProduct = (id, payload) => api.patch(`/products/${id}`, payload);
+export const deleteProduct = (id) => api.delete(`/products/${id}`);
+export const getProductImageUploadSignature = () => api.post("/products/admin/image-upload-signature");
+export const deleteUploadedProductImage = (url) =>
+  api.delete("/products/admin/image-upload", { data: { url } });
+
 // Reviews
 export const getProductReviews = (productId) => api.get(`/products/${productId}/reviews`);
 export const addProductReview = (productId, payload) => api.post(`/products/${productId}/reviews`, payload);
@@ -64,6 +82,11 @@ export const createOrder = (payload) => api.post("/orders", payload);
 export const getMyOrders = () => api.get("/orders/my");
 export const getOrderById = (id) => api.get(`/orders/${id}`);
 export const getMyTransactions = () => api.get("/transactions/my");
+export const getAdminDashboard = () => api.get("/orders/admin/dashboard");
+export const getAdminOrders = (params = {}) => api.get("/orders", { params });
+export const updateAdminOrderStatus = (id, status) => api.patch(`/orders/${id}/status`, { status });
+export const getAdminCustomers = (params = {}) => api.get("/users/admin/customers", { params });
+export const getAdminCustomerOrders = (id) => api.get(`/users/admin/customers/${id}/orders`);
 
 // Store data
 export const getCities = () => api.get("/cities");

@@ -5,6 +5,7 @@ const admin = require("../middleware/adminMiddleware");
 const Order = require("../models/order");
 const Transaction = require("../models/transaction");
 const { Product } = require("../models/products");
+const { User } = require("../models/user");
 const cities = require("../data/cities");
 const { cleanString, isObjectId } = require("../utils/validation");
 
@@ -114,6 +115,108 @@ router.post("/", auth, async (req, res, next) => {
   }
 });
 
+router.get("/admin/dashboard", auth, admin, async (_req, res, next) => {
+  try {
+    const bestSellerStatuses = ["confirmed", "processing", "shipped", "delivered", "paid"];
+
+    const [
+      totalProducts,
+      totalCustomers,
+      totalOrders,
+      pendingOrders,
+      lowStockProducts,
+      revenueRows,
+      orderStatusRows,
+      inventoryRows,
+      bestSellingProducts,
+      recentOrders,
+    ] = await Promise.all([
+      Product.countDocuments(),
+      User.countDocuments({ role: "customer" }),
+      Order.countDocuments(),
+      Order.countDocuments({ status: "pending" }),
+      Product.countDocuments({ countInStock: { $lte: 5 } }),
+      Order.aggregate([
+        { $match: { "payment.status": "PAID" } },
+        { $group: { _id: null, revenue: { $sum: "$total" } } },
+      ]),
+      Order.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+      Product.aggregate([
+        {
+          $project: {
+            bucket: {
+              $switch: {
+                branches: [
+                  { case: { $lte: ["$countInStock", 0] }, then: "Out of stock" },
+                  { case: { $lte: ["$countInStock", 5] }, then: "Low stock" },
+                ],
+                default: "In stock",
+              },
+            },
+          },
+        },
+        { $group: { _id: "$bucket", count: { $sum: 1 } } },
+      ]),
+      Order.aggregate([
+        { $match: { status: { $in: bestSellerStatuses } } },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.productId",
+            name: { $first: "$items.name" },
+            image: { $first: "$items.image" },
+            units: { $sum: "$items.qty" },
+            sales: { $sum: { $multiply: ["$items.price", "$items.qty"] } },
+          },
+        },
+        { $sort: { units: -1, sales: -1 } },
+        { $limit: 6 },
+      ]),
+      Order.find()
+        .populate("user", "name email phone city")
+        .sort({ createdAt: -1 })
+        .limit(8)
+        .lean(),
+    ]);
+
+    const orderStatus = orderStatusRows.map((row) => ({
+      label: String(row._id || "unknown"),
+      value: Number(row.count || 0),
+    }));
+
+    const inventory = inventoryRows.map((row) => ({
+      label: String(row._id || "Unknown"),
+      value: Number(row.count || 0),
+    }));
+
+    return res.json({
+      totals: {
+        totalProducts,
+        totalCustomers,
+        totalOrders,
+        pendingOrders,
+        revenue: Number(revenueRows?.[0]?.revenue || 0),
+        lowStockProducts,
+      },
+      orderStatus,
+      inventory,
+      bestSellingProducts: bestSellingProducts.map((item) => ({
+        productId: item._id,
+        name: item.name || "Product",
+        image: item.image || "",
+        units: Number(item.units || 0),
+        sales: Number(item.sales || 0),
+      })),
+      recentOrders,
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 router.get("/my", auth, async (req, res, next) => {
   try {
     return res.json(await Order.find({ user: req.user.id }).sort({ createdAt: -1 }).lean());
@@ -126,7 +229,7 @@ router.get("/", auth, admin, async (req, res, next) => {
   try {
     const status = cleanString(req.query?.status, 40).toLowerCase();
     const filter = status && Object.prototype.hasOwnProperty.call(STATUS_TRANSITIONS, status) ? { status } : {};
-    const orders = await Order.find(filter).populate("user", "name email").sort({ createdAt: -1 }).limit(500).lean();
+    const orders = await Order.find(filter).populate("user", "name email phone city").sort({ createdAt: -1 }).limit(500).lean();
     return res.json(orders);
   } catch (err) {
     return next(err);
@@ -193,7 +296,7 @@ router.get("/:id", auth, async (req, res, next) => {
   try {
     if (!isObjectId(req.params.id)) return res.status(400).json({ message: "Invalid order id." });
     const order = await Order.findOne({ _id: req.params.id, user: req.user.id })
-      .populate("user", "name email")
+      .populate("user", "name email phone city")
       .lean();
     if (!order) return res.status(404).json({ message: "Order not found." });
     return res.json(order);

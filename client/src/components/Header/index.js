@@ -40,6 +40,11 @@ const Header = () => {
     navigate("/history");
   };
 
+  const goAdmin = () => {
+    handleCloseMenu();
+    navigate("/admin");
+  };
+
   const handleLogout = async () => {
     try {
       await apiLogout();
@@ -135,6 +140,9 @@ const Header = () => {
                           </MenuItem>
                           <Divider />
                           <MenuItem onClick={goHistory}>Your History</MenuItem>
+                          {user.role === "admin" && (
+                            <MenuItem onClick={goAdmin}>Admin Dashboard</MenuItem>
+                          )}
                           <MenuItem onClick={handleLogout}>Logout</MenuItem>
                         </Menu>
                       </>
