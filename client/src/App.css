@@ -9157,3 +9157,143 @@ textarea {
     transition: none !important;
   }
 }
+
+/* ===== FINAL PRODUCT LISTING WIDTH / GRID FIX =====
+   The legacy .productItem.four/.three/.two percentage widths were being
+   applied inside an already-columnized CSS Grid, collapsing every card.
+   These rules make grid cells the single source of layout sizing. */
+.product_Listing_Page .content_right .productListing.product-results-grid {
+  display: grid !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  align-items: stretch !important;
+  justify-items: stretch !important;
+  grid-auto-flow: row !important;
+  gap: 22px !important;
+}
+
+.product_Listing_Page .content_right .productListing.product-results-grid > .productItem,
+.product_Listing_Page .content_right .productListing.product-results-grid > .productItem.four,
+.product_Listing_Page .content_right .productListing.product-results-grid > .productItem.three,
+.product_Listing_Page .content_right .productListing.product-results-grid > .productItem.two,
+.product_Listing_Page .content_right .productListing.product-results-grid > .productItem.one {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  flex: none !important;
+  align-self: stretch !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid.view-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid.view-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid.view-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid.view-one {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* Restore the deliberate horizontal card layout only for the one-column view. */
+.product_Listing_Page .content_right .product-results-grid.view-one > .productItem.one {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 34%) minmax(0, 1fr) !important;
+  min-height: 330px !important;
+}
+
+/* Product card proportions */
+.product_Listing_Page .content_right .product-results-grid:not(.view-one) .productItem .imgWrapper {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: clamp(210px, 18vw, 270px) !important;
+  flex: 0 0 auto !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid .productItem .info {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid:not(.view-one) .product-card-title {
+  min-height: 42px !important;
+  font-size: 15px !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid .product-card-stock-price {
+  margin-top: auto !important;
+}
+
+.product_Listing_Page .content_right .product-results-grid .product-card-add {
+  border-radius: 14px !important;
+  min-height: 42px !important;
+}
+
+/* The catalogue toolbar should remain readable without squeezing the cards. */
+.product_Listing_Page .content_right .showBy {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+  row-gap: 8px !important;
+}
+
+.product_Listing_Page .content_right .showBy .btnWrapper {
+  flex: 0 0 auto !important;
+}
+
+.product_Listing_Page .content_right .showByFilter {
+  min-width: 0 !important;
+}
+
+/* Responsive column fallbacks: never create unusably thin cards. */
+@media (max-width: 1320px) {
+  .product_Listing_Page .content_right .product-results-grid.view-four {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .product_Listing_Page .content_right .product-results-grid.view-four,
+  .product_Listing_Page .content_right .product-results-grid.view-three {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .product_Listing_Page .content_right .product-results-grid:not(.view-one) .productItem .imgWrapper {
+    height: 235px !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .product_Listing_Page .content_right .product-results-grid.view-four,
+  .product_Listing_Page .content_right .product-results-grid.view-three,
+  .product_Listing_Page .content_right .product-results-grid.view-two {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .product_Listing_Page .content_right .product-results-grid.view-one > .productItem.one {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .product_Listing_Page .content_right .product-results-grid.view-four,
+  .product_Listing_Page .content_right .product-results-grid.view-three,
+  .product_Listing_Page .content_right .product-results-grid.view-two {
+    grid-template-columns: 1fr !important;
+  }
+
+  .product_Listing_Page .content_right .product-results-grid:not(.view-one) .productItem .imgWrapper {
+    height: 250px !important;
+  }
+}
