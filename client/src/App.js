@@ -1,7 +1,7 @@
 import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 import "bootstrap-4-react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import { IoHome } from "react-icons/io5";
 
@@ -130,36 +130,39 @@ function AppContent() {
     supportPhone: "",
     announcement: "",
   });
+  const [loginGate, setLoginGate] = useState({ open: false, message: "" });
+  const loginGateResolver = useRef(null);
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const openLoginGate = async (message = "Please sign in to continue.") => {
-    const result = await Swal.fire({
-      title: "Hey there! 👋",
-      html: `
-        <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:8px;">
-          <div style="font-size:28px;">🔐</div>
-          <div style="text-align:left">
-            <div style="font-weight:700;margin-bottom:2px;">You need an account</div>
-            <div style="opacity:.8;">${message}</div>
-          </div>
-        </div>`,
-      icon: "info",
-      showCancelButton: true,
-      confirmButtonText: "Sign in / Register",
-      cancelButtonText: "Not now",
-      reverseButtons: true,
-      focusConfirm: false,
+  const openLoginGate = useCallback((message = "Please sign in to continue.") => {
+    if (loginGateResolver.current) {
+      loginGateResolver.current(false);
+      loginGateResolver.current = null;
+    }
+
+    return new Promise((resolve) => {
+      loginGateResolver.current = resolve;
+      setLoginGate({ open: true, message });
     });
-    return result.isConfirmed;
-  };
+  }, []);
+
+  const closeLoginGate = useCallback((confirmed = false) => {
+    setLoginGate((current) => ({ ...current, open: false }));
+    const resolver = loginGateResolver.current;
+    loginGateResolver.current = null;
+    if (resolver) resolver(Boolean(confirmed));
+  }, []);
+
 
   const refreshUser = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
       setUser(null);
       setWishlist([]);
+      setCart([]);
+      localStorage.removeItem("aura_mosaic_cart");
       setAuthLoading(false);
       return;
     }
@@ -211,6 +214,23 @@ function AppContent() {
 
 
   useEffect(() => {
+    if (!loginGate.open) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") closeLoginGate(false);
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [closeLoginGate, loginGate.open]);
+
+  useEffect(() => {
     if (selectedCity) localStorage.setItem("aura_mosaic_city", selectedCity);
     else localStorage.removeItem("aura_mosaic_city");
   }, [selectedCity]);
@@ -234,6 +254,13 @@ function AppContent() {
   }, [cart]);
 
   const addToCart = (product, qty = 1) => {
+    if (!user) {
+      openLoginGate("Sign in or create an account before adding products to your cart.").then((go) => {
+        if (go) navigate("/register");
+      });
+      return false;
+    }
+
     const next = normalizeCartItem(product, qty);
     if (!next) return false;
     setCart((previous) => {
@@ -328,7 +355,7 @@ function AppContent() {
         <Route path="/gifting" element={<RequireAuth><Gifting /></RequireAuth>} />
         <Route path="/ai-studio" element={<RequireAuth><AIStudio /></RequireAuth>} />
         <Route path="/register" element={<Auth />} />
-        <Route path="/cart" element={<Cart />} />
+        <Route path="/cart" element={<RequireAuth><Cart /></RequireAuth>} />
         <Route path="/wishlist" element={<RequireAuth><Wishlist /></RequireAuth>} />
         <Route path="/history" element={<RequireAuth><History /></RequireAuth>} />
         <Route path="/order-confirmation/:orderId" element={<RequireAuth><OrderConfirmation /></RequireAuth>} />
@@ -338,6 +365,65 @@ function AppContent() {
         <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      {loginGate.open && (
+        <div
+          className="loginGateBackdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeLoginGate(false);
+          }}
+        >
+          <section
+            className="loginGateModal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-gate-title"
+            aria-describedby="login-gate-description"
+          >
+            <button
+              type="button"
+              className="loginGateClose"
+              onClick={() => closeLoginGate(false)}
+              aria-label="Close sign-in prompt"
+            >
+              ×
+            </button>
+
+            <div className="loginGateArt" aria-hidden="true">
+              <span className="loginGateSpark loginGateSpark--one">✦</span>
+              <span className="loginGateSpark loginGateSpark--two">✧</span>
+              <span className="loginGateLock">🔐</span>
+            </div>
+
+            <span className="loginGateEyebrow">AURA-MOSAIC ACCOUNT</span>
+            <h2 id="login-gate-title">Save your picks securely.</h2>
+            <p id="login-gate-description">{loginGate.message}</p>
+
+            <div className="loginGateBenefits" aria-label="Account benefits">
+              <span>♡ Keep your wishlist</span>
+              <span>🛍 Save your cart</span>
+              <span>📦 Track your orders</span>
+            </div>
+
+            <button
+              type="button"
+              className="loginGatePrimary"
+              onClick={() => closeLoginGate(true)}
+            >
+              <span>Sign in / Create account</span>
+              <span aria-hidden="true">→</span>
+            </button>
+            <button
+              type="button"
+              className="loginGateSecondary"
+              onClick={() => closeLoginGate(false)}
+            >
+              Keep browsing
+            </button>
+          </section>
+        </div>
+      )}
 
       {isHeaderFooterShow && <Footer />}
       {isHeaderFooterShow && <ChatBot />}
