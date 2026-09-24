@@ -29,6 +29,7 @@ import {
   getMe,
   getWishlist,
   removeWishlistItem,
+  getStoreSettings,
 } from "./api/api";
 
 const MyContext = createContext();
@@ -92,6 +93,16 @@ function RequireAdmin({ children }) {
   return children;
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
+  return null;
+}
+
 function AppContent() {
   const [cityList, setCityList] = useState([]);
   const [selectedCity, setSelectedCity] = useState(() => localStorage.getItem("aura_mosaic_city") || "");
@@ -108,6 +119,17 @@ function AppContent() {
   });
   const [wishlist, setWishlist] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "theme-green");
+  const [storeSettings, setStoreSettings] = useState({
+    storeName: "Aura Mosaic",
+    currency: "BDT",
+    shippingFlatFee: 60,
+    freeShippingThreshold: 500,
+    lowStockThreshold: 5,
+    allowCOD: true,
+    supportEmail: "",
+    supportPhone: "",
+    announcement: "",
+  });
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -159,6 +181,14 @@ function AppContent() {
     getCities()
       .then((res) => setCityList(Array.isArray(res.data) ? res.data : []))
       .catch(() => setCityList([]));
+  }, []);
+
+  useEffect(() => {
+    getStoreSettings()
+      .then((res) => {
+        if (res?.data) setStoreSettings((current) => ({ ...current, ...res.data }));
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -280,68 +310,16 @@ function AppContent() {
     removeFromWishlist,
     isWishlisted,
     openLoginGate,
+    storeSettings,
   };
 
-  const offerLines = [
-    "Curated finds • Made for everyday joy",
-    "Handcrafts • Plants • Skincare",
-    "Fresh products • Simple shopping",
-    "Gift ideas • Thoughtfully selected",
-    "Free delivery on orders Tk. 500+",
-  ];
-  const proverbLines = [
-    "Good things take time.",
-    "Quality isn’t an act — it’s a habit.",
-    "Small steps every day.",
-    "Simplicity is sophistication.",
-    "Happiness is handmade.",
-  ];
-  const [offerIndex, setOfferIndex] = useState(0);
-  const [provIndex, setProvIndex] = useState(0);
-
-  useEffect(() => {
-    const offerTimer = setInterval(() => setOfferIndex((i) => (i + 1) % offerLines.length), 3500);
-    const proverbTimer = setInterval(() => setProvIndex((i) => (i + 1) % proverbLines.length), 4000);
-    return () => {
-      clearInterval(offerTimer);
-      clearInterval(proverbTimer);
-    };
-  }, [offerLines.length, proverbLines.length]);
-
   const showHomeFab = location.pathname !== "/";
-  const showSideRails = isHeaderFooterShow && location.pathname !== "/admin";
+
 
   return (
     <MyContext.Provider value={values}>
+      <ScrollToTop />
       {isHeaderFooterShow && <Header />}
-      {!isHeaderFooterShow && (
-        <button
-          type="button"
-          className="auth-theme-fab"
-          onClick={() => setTheme(theme === "theme-green" ? "theme-pink" : "theme-green")}
-          aria-label="Toggle color theme"
-          title={theme === "theme-green" ? "Switch to Berry Bloom" : "Switch to Mint Pop"}
-        >
-          <span>{theme === "theme-green" ? "🍬" : "🌷"}</span>
-          <strong>{theme === "theme-green" ? "Mint Pop" : "Berry Bloom"}</strong>
-        </button>
-      )}
-
-      {showSideRails && (
-        <>
-          <div className="side-rail rail-left" aria-hidden>
-            <div className="rail-inner">
-              <span key={offerIndex} className="rail-text">{offerLines[offerIndex]}</span>
-            </div>
-          </div>
-          <div className="side-rail rail-right" aria-hidden>
-            <div className="rail-inner rail-inner-right">
-              <span key={provIndex} className="rail-text">{proverbLines[provIndex]}</span>
-            </div>
-          </div>
-        </>
-      )}
-
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/product/:id" element={<ProductDetails />} />

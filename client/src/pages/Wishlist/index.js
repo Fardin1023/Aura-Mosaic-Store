@@ -1,110 +1,48 @@
-// src/pages/Wishlist/index.js
 import { useContext, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import Button from "@mui/material/Button";
-import Swal from "sweetalert2";
+import { Link } from "react-router-dom";
+import { FiHeart, FiArrowRight } from "react-icons/fi";
 import { MyContext } from "../../App";
-import { FaCartPlus, FaTrashAlt } from "react-icons/fa";
+import ProductItem from "../../components/ProductItem";
 
 const Wishlist = () => {
-  const navigate = useNavigate();
-  const { wishlist, addToCart, removeFromWishlist } = useContext(MyContext) || {};
-
-  // derive helpers
-  const items = useMemo(() => Array.isArray(wishlist) ? wishlist : [], [wishlist]);
-
-  const getId = (p) => p._id || p.id || p.slug || String(p.name || "");
-  const getName = (p) => p.name || p.title || "Unnamed Product";
-  const getImage = (p) =>
-    (Array.isArray(p.images) && p.images[0]) ||
-    p.thumbnail ||
-    p.image ||
-    "https://via.placeholder.com/600x400?text=No+Image";
-  const getPrice = (p) => Number(p.price || p.newPrice || 0);
-
-  const removeItem = (id) => {
-    if (!removeFromWishlist) return;
-    removeFromWishlist(id); // updates global context → header count updates instantly
-  };
-
-  const moveToCart = (p) => {
-    const added = addToCart?.(p, 1);
-    if (!added) return;
-    removeItem(getId(p));
-    Swal.fire({
-      title: "Moved to cart",
-      text: `${getName(p)} was added to your cart.`,
-      icon: "success",
-      confirmButtonText: "Keep browsing",
-      showCancelButton: true,
-      cancelButtonText: "Go to cart",
-      reverseButtons: true,
-    }).then((r) => {
-      if (r.dismiss === Swal.DismissReason.cancel) navigate("/cart");
-    });
-  };
+  const { wishlist } = useContext(MyContext) || {};
+  const items = useMemo(() => (Array.isArray(wishlist) ? wishlist : []), [wishlist]);
 
   return (
-    <section className="section wishlist-page">
+    <section className="section wishlist-page wishlist-page-v2">
       <div className="container">
-        <div className="d-flex align-items-center mb-3">
-          <h3 className="mb-0">My Wishlist</h3>
-          <span className="chip ml-3">
-            <span className="dot" /> {items.length} saved
-          </span>
-          <div className="ml-auto">
-            <Link to="/" className="text-muted">← Continue shopping</Link>
+        <div className="wishlist-hero-v2">
+          <div>
+            <span className="wishlist-kicker-v2"><FiHeart /> Your saved shelf</span>
+            <h1>Wishlist</h1>
+            <p>Keep the little things you love in one place, then add them to your cart whenever you’re ready.</p>
+          </div>
+          <div className="wishlist-count-card-v2">
+            <strong>{items.length}</strong>
+            <span>{items.length === 1 ? "saved item" : "saved items"}</span>
           </div>
         </div>
 
         {items.length === 0 ? (
-          <div className="wishlist-empty text-center">
-            <h5 className="mb-2">Your wishlist is empty</h5>
-            <p className="text-muted mb-3">
-              Save products you love and revisit them anytime.
-            </p>
-            <Link to="/" className="btn btn-blue btn-round">Browse products</Link>
+          <div className="wishlist-empty-v2">
+            <div className="wishlist-empty-v2__icon"><FiHeart /></div>
+            <span>Nothing saved yet</span>
+            <h2>Your wishlist is waiting for a favorite.</h2>
+            <p>Tap the heart on any product to save it here. Your wishlist stays synced with your account.</p>
+            <Link to="/listing/All" className="aura-btn aura-btn-primary">Browse products <FiArrowRight /></Link>
           </div>
         ) : (
-          <div className="row">
-            {items.map((p) => {
-              const id = getId(p);
-              return (
-                <div className="col-sm-6 col-md-4 col-lg-3 mb-4" key={id}>
-                  <div className="card h-100">
-                    <img
-                      src={getImage(p)}
-                      alt={getName(p)}
-                      className="card-img-top"
-                      onClick={() => navigate(`/product/${id}`)}
-                      style={{ cursor: "pointer" }}
-                    />
-                    <div className="card-body d-flex flex-column">
-                      <h6 className="card-title mb-1">{getName(p)}</h6>
-                      <div className="d-flex align-items-center mb-3">
-                        <span className="card-text">৳{getPrice(p).toFixed(2)}</span>
-                      </div>
-                      <div className="mt-auto d-flex">
-                        <Button
-                          className="btn-green btn-round"
-                          onClick={() => moveToCart(p)}
-                        >
-                          <FaCartPlus className="mr-2" /> Add to cart
-                        </Button>
-                        <Button
-                          className="btn-outline-danger btn-round ml-2"
-                          onClick={() => removeItem(id)}
-                          title="Remove"
-                        >
-                          <FaTrashAlt />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <>
+            <div className="wishlist-toolbar-v2">
+              <span>{items.length} curated favorite{items.length === 1 ? "" : "s"}</span>
+              <Link to="/listing/All">Keep exploring <FiArrowRight /></Link>
+            </div>
+            <div className="wishlist-product-grid-v2">
+              {items.map((product) => (
+                <ProductItem key={product._id || product.id} product={product} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </section>

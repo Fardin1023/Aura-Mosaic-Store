@@ -1,5 +1,6 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { FiArrowRight, FiMapPin, FiPhone, FiUser } from "react-icons/fi";
 import { MyContext } from "../../App";
 import { updateMe } from "../../api/api";
 
@@ -10,6 +11,9 @@ const CompleteProfile = () => {
     email: user?.email || "",
     phone: user?.phone || "",
     city: user?.city || "",
+    addressLine1: user?.addressLine1 || "",
+    addressLine2: user?.addressLine2 || "",
+    postalCode: user?.postalCode || "",
     picture: user?.picture || "",
   });
   const [saving, setSaving] = useState(false);
@@ -28,9 +32,17 @@ const CompleteProfile = () => {
       email: user.email || "",
       phone: user.phone || "",
       city: user.city || "",
+      addressLine1: user.addressLine1 || "",
+      addressLine2: user.addressLine2 || "",
+      postalCode: user.postalCode || "",
       picture: user.picture || "",
     });
   }, [user]);
+
+  const initials = useMemo(
+    () => String(form.name || user?.name || "A").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+    [form.name, user?.name]
+  );
 
   const updateField = (event) => setForm((previous) => ({ ...previous, [event.target.name]: event.target.value }));
 
@@ -43,6 +55,9 @@ const CompleteProfile = () => {
         name: form.name,
         phone: form.phone,
         city: form.city,
+        addressLine1: form.addressLine1,
+        addressLine2: form.addressLine2,
+        postalCode: form.postalCode,
         picture: form.picture,
         isProfileComplete: true,
       });
@@ -57,45 +72,46 @@ const CompleteProfile = () => {
   };
 
   return (
-    <section className="section">
-      <div className="container" style={{ maxWidth: 720 }}>
-        <div className="card p-4 shadow border-0">
-          <h3 className="mb-3">Welcome! Let’s complete your profile</h3>
-          <p className="text-muted mb-4">We’ll use this information to personalize your shopping experience.</p>
-          {error && <div className="alert alert-danger">{error}</div>}
-          <form onSubmit={submit}>
-            <div className="form-row">
-              <div className="form-group col-md-6">
-                <label>Name</label>
-                <input name="name" className="form-control" value={form.name} onChange={updateField} required />
-              </div>
-              <div className="form-group col-md-6">
-                <label>Email</label>
-                <input name="email" type="email" className="form-control" value={form.email} readOnly />
-              </div>
-            </div>
-            <div className="form-row">
-              <div className="form-group col-md-6">
-                <label>Phone</label>
-                <input name="phone" className="form-control" value={form.phone} onChange={updateField} placeholder="e.g. 017XXXXXXXX" />
-              </div>
-              <div className="form-group col-md-6">
-                <label>City</label>
-                <select name="city" className="form-control" value={form.city} onChange={updateField}>
-                  <option value="">Select a city</option>
-                  {(cityList || []).map((item) => (
-                    <option key={item.name} value={item.name}>{item.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Avatar URL (optional)</label>
-              <input name="picture" className="form-control" value={form.picture} onChange={updateField} placeholder="https://…" />
-            </div>
-            <button className="btn btn-primary btn-lg" type="submit" disabled={saving}>{saving ? "Saving…" : "Save & Continue"}</button>
-          </form>
+    <section className="profile-completion-page">
+      <div className="profile-completion-shell">
+        <div className="profile-completion-art">
+          <span className="profile-completion-kicker">Almost there ✨</span>
+          <h1>Make Aura-Mosaic feel a little more yours.</h1>
+          <p>Add the details we need for smoother delivery and a more personal shopping experience.</p>
+          <div className="profile-completion-perks">
+            <div><span><FiMapPin /></span><strong>Faster checkout</strong><small>Your delivery city stays ready.</small></div>
+            <div><span><FiPhone /></span><strong>Order support</strong><small>Contact details help with delivery questions.</small></div>
+            <div><span><FiUser /></span><strong>Personal account</strong><small>Your account becomes easier to recognize.</small></div>
+          </div>
         </div>
+
+        <form className="profile-completion-form" onSubmit={submit}>
+          <div className="profile-completion-avatar">
+            {form.picture ? <img src={form.picture} alt="Profile preview" /> : <span>{initials}</span>}
+          </div>
+          <div className="profile-completion-heading">
+            <span>Welcome to Aura-Mosaic</span>
+            <h2>Complete your profile</h2>
+            <p>You can change these details later from My Account.</p>
+          </div>
+
+          {error && <div className="profile-completion-error">{error}</div>}
+
+          <div className="profile-completion-grid">
+            <label><span>Name</span><input name="name" value={form.name} onChange={updateField} required /></label>
+            <label><span>Email</span><input name="email" type="email" value={form.email} readOnly /></label>
+            <label><span>Phone</span><input name="phone" value={form.phone} onChange={updateField} placeholder="017XXXXXXXX" /></label>
+            <label><span>City</span><select name="city" value={form.city} onChange={updateField}><option value="">Select a city</option>{(cityList || []).map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label>
+            <label className="profile-completion-full"><span>Address line 1</span><input name="addressLine1" value={form.addressLine1} onChange={updateField} placeholder="House, road, area" /></label>
+            <label className="profile-completion-full"><span>Address line 2</span><input name="addressLine2" value={form.addressLine2} onChange={updateField} placeholder="Apartment, landmark or extra directions" /></label>
+            <label><span>Postal code</span><input name="postalCode" value={form.postalCode} onChange={updateField} placeholder="Optional" /></label>
+            <label><span>Avatar URL</span><input name="picture" value={form.picture} onChange={updateField} placeholder="Optional image URL" /></label>
+          </div>
+
+          <button className="profile-completion-submit" type="submit" disabled={saving}>
+            {saving ? "Saving…" : <>Save & continue <FiArrowRight /></>}
+          </button>
+        </form>
       </div>
     </section>
   );

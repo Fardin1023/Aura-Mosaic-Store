@@ -303,7 +303,11 @@ const ProductListing = () => {
             </div>
 
             {loading ? (
-              <p>Loading products…</p>
+              <div className={`productListing product-results-grid view-${effectiveProductView}`}>
+                {Array.from({ length: effectiveProductView === "one" ? 2 : 6 }).map((_, index) => (
+                  <div className="aura-skeleton aura-skeleton-product" key={index} />
+                ))}
+              </div>
             ) : items.length === 0 ? (
               <p>No products match your search or filters.</p>
             ) : (

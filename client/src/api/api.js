@@ -149,3 +149,8 @@ export const askAuraGiftDesigner = (payload) =>
 
 // Aura Assistant v2
 export const assistantChatV2 = (payload) => api.post("/recommendations/assistant", payload, { timeout: 75000 });
+
+// Checkout / online payments
+export const getPaymentOptions = () => api.get("/orders/payment-options");
+export const initiateOnlinePayment = (payload) =>
+  api.post("/orders/payments/sslcommerz/initiate", payload, { timeout: 45000 });

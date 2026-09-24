@@ -23,7 +23,7 @@ const discoveryCards = [
 ];
 
 const Home = () => {
-  const { wishlist, user, openLoginGate } = useContext(MyContext);
+  const { wishlist, user, openLoginGate, storeSettings } = useContext(MyContext);
   const navigate = useNavigate();
 
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -31,6 +31,7 @@ const Home = () => {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState("");
   const [newsletterLoading, setNewsletterLoading] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
@@ -43,6 +44,8 @@ const Home = () => {
         setNewProducts(Array.isArray(newestRes.data?.items) ? newestRes.data.items : []);
       } catch (e) {
         console.error("Home load error:", e);
+      } finally {
+        setCatalogLoading(false);
       }
     };
     load();
@@ -72,7 +75,7 @@ const Home = () => {
         <div><span>✨</span><strong>AI-powered picks</strong><small>Smarter shopping, less scrolling</small></div>
         <div><span>🎁</span><strong>Gift Studio</strong><small>Prompt-to-present in a few taps</small></div>
         <div><span>💗</span><strong>Curated with care</strong><small>Fun finds for every mood</small></div>
-        <div><span>🚚</span><strong>Cash on Delivery</strong><small>Simple, familiar checkout</small></div>
+        <div><span>🚚</span><strong>{storeSettings?.allowCOD === false ? "Store checkout" : "Cash on Delivery"}</strong><small>{storeSettings?.allowCOD === false ? "Checkout availability is managed live" : "Simple, familiar checkout"}</small></div>
       </section>
 
       <section className="container home-gift-spotlight">
@@ -109,7 +112,9 @@ const Home = () => {
             </div>
           </div>
 
-          {featuredProducts.length ? (
+          {catalogLoading ? (
+            <div className="home-product-grid">{Array.from({ length: 4 }).map((_, index) => <div className="aura-skeleton aura-skeleton-card" key={index} />)}</div>
+          ) : featuredProducts.length ? (
             <div className="product_row home-product-slider">
               <Swiper
                 slidesPerView={1.15}
@@ -169,7 +174,9 @@ const Home = () => {
             <Link to="/listing/New%20Arrivals" className="home-view-link">View new arrivals <FaArrowRightLong /></Link>
           </div>
 
-          {newProducts.length ? (
+          {catalogLoading ? (
+            <div className="home-product-grid">{Array.from({ length: 4 }).map((_, index) => <div className="aura-skeleton aura-skeleton-card" key={index} />)}</div>
+          ) : newProducts.length ? (
             <div className="productRow2 home-product-grid">
               {newProducts.map((product) => (
                 <ProductItem key={product._id || product.id} product={product} />

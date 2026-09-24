@@ -1,4 +1,5 @@
-import logo from "../../assets/images/logo.png";
+import logo from "../../assets/images/aura-mosaic-logo.png";
+import logoMark from "../../assets/images/aura-mosaic-mark.png";
 import { Link, useNavigate } from "react-router-dom";
 import CityDropdown from "../CityDropdown";
 import { FaRegUser } from "react-icons/fa";
@@ -17,7 +18,7 @@ import Divider from "@mui/material/Divider";
 import { logout as apiLogout } from "../../api/api";
 
 const Header = () => {
-  const { user, setUser, cart, cartTotals, theme, setTheme, wishlist, openLoginGate } =
+  const { user, setUser, cart, cartTotals, theme, setTheme, wishlist, openLoginGate, storeSettings } =
     useContext(MyContext);
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -75,7 +76,7 @@ const Header = () => {
         <div className="top-strip bg-cyan">
           <div className="container">
             <p className="mb-0 mt-0 text-center">
-              ✨ Little joys, lovely finds & AI-made gifts — curated for every mood.
+              ✨ {storeSettings?.announcement || "Little joys, lovely finds & AI-made gifts — curated for every mood."}
             </p>
           </div>
         </div>
@@ -91,32 +92,35 @@ const Header = () => {
                   className="brandLink d-flex align-items-center"
                   aria-label="Aura-Mosaic Home"
                 >
-                  <img src={logo} alt="Aura-Mosaic logo" />
-                  <span className="brandName">Aura-Mosaic</span>
+                  <img className="brandLogoFull" src={logo} alt="Aura-Mosaic" />
+                  <img className="brandLogoMark" src={logoMark} alt="" aria-hidden="true" />
                 </Link>
               </div>
 
               {/* Right side */}
               <div className="col-sm-10">
                 <div className="headerBar">
-                  {/* Location */}
-                  <CityDropdown />
+                  <div className="headerPrimary">
+                    {/* Location */}
+                    <CityDropdown />
 
-                  {/* Search (flexes to fill) */}
-                  <SearchBox />
+                    {/* Search (flexes to fill) */}
+                    <SearchBox />
 
-                  <Link
-                    to="/ai-studio"
-                    className="aiLaunchBtn"
-                    title="Aura AI Studio"
-                    aria-label="Open Aura AI Studio"
-                  >
-                    <span className="aiLaunchIcon">✨</span>
-                    <span className="aiLaunchCopy">Aura AI</span>
-                  </Link>
+                    <Link
+                      to="/ai-studio"
+                      className="aiLaunchBtn"
+                      title="Open Aura AI Studio"
+                      aria-label="Open Aura AI Studio"
+                    >
+                      <span className="aiLaunchGlow" aria-hidden="true" />
+                      <span className="aiLaunchIcon" aria-hidden="true">✦</span>
+                      <span className="aiLaunchCopy">Aura AI</span>
+                    </Link>
+                  </div>
 
                   {/* Right actions */}
-                  <div className="hStack">
+                  <div className="headerActions hStack">
                     {/* User */}
                     {user ? (
                       <>
@@ -126,15 +130,11 @@ const Header = () => {
                           aria-controls={open ? "user-menu" : undefined}
                           aria-haspopup="true"
                           aria-expanded={open ? "true" : undefined}
-                          title="Account"
+                          title={`Account • Spent Tk. ${Number(user?.spent || 0).toFixed(0)}`}
                         >
                           <FaRegUser className="icon" />
                           <div className="meta">
                             <span className="name">Hi, {user.name}</span>
-                            {/* 👇 show SPENT, not stored balance */}
-                            <span className="sub">
-                              Spent: Tk. {Number(user?.spent || 0).toFixed(0)}
-                            </span>
                           </div>
                         </button>
 
@@ -149,7 +149,7 @@ const Header = () => {
                             Signed in as&nbsp;<strong>{user.email}</strong>
                           </MenuItem>
                           <Divider />
-                          <MenuItem onClick={goHistory}>Your History</MenuItem>
+                          <MenuItem onClick={goHistory}>My Account</MenuItem>
                           {user.role === "admin" && (
                             <MenuItem onClick={goAdmin}>Admin Dashboard</MenuItem>
                           )}
@@ -191,17 +191,15 @@ const Header = () => {
 
                     {/* Theme toggle */}
                     <button
-                      className="themeToggler"
+                      className={`themeToggler ${theme === "theme-green" ? "is-mint" : "is-berry"}`}
                       onClick={toggleTheme}
                       title={theme === "theme-green" ? "Switch to Berry Bloom" : "Switch to Mint Pop"}
-                      aria-label="Toggle color theme"
+                      aria-label={theme === "theme-green" ? "Switch to Berry Bloom theme" : "Switch to Mint Pop theme"}
+                      data-tooltip={theme === "theme-green" ? "Berry Bloom" : "Mint Pop"}
                       aria-pressed={theme === "theme-pink"}
                     >
-                      <span className="themeTogglerIcon">{theme === "theme-green" ? "🍬" : "🌷"}</span>
-                      <span className="themeTogglerCopy">
-                        <strong>{theme === "theme-green" ? "Mint Pop" : "Berry Bloom"}</strong>
-                        <small>Theme</small>
-                      </span>
+                      <span className="themeTogglerHalo" aria-hidden="true" />
+                      <span className="themeTogglerIcon" aria-hidden="true">{theme === "theme-green" ? "🍬" : "🌷"}</span>
                     </button>
                   </div>
                 </div>

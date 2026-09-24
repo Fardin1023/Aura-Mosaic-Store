@@ -103,6 +103,7 @@ const SearchBox = () => {
   return (
     <div className="searchBox" ref={boxRef}>
       <form onSubmit={onSubmit} className="searchForm">
+        <span className="searchLeadIcon" aria-hidden="true"><IoSearch /></span>
         <input
           type="text"
           value={q}
@@ -117,6 +118,7 @@ const SearchBox = () => {
           aria-label="Search products"
         />
         <button type="submit" className="btnSearch" aria-label="Search">
+          <span className="searchButtonShine" aria-hidden="true" />
           {loading ? <span className="spinner" /> : <IoSearch />}
         </button>
       </form>

@@ -1,29 +1,38 @@
+import { useContext } from "react";
 import { GiPlantSeed } from "react-icons/gi";
 import { MdDeliveryDining } from "react-icons/md";
 import { RiDiscountPercentFill } from "react-icons/ri";
 import { IoIosPricetags } from "react-icons/io";
 import { Link } from "react-router-dom";
-import logo from "../../assets/images/logo.png";
+import logo from "../../assets/images/aura-mosaic-logo.png";
+import { MyContext } from "../../App";
 
 const Footer = () => {
+  const { storeSettings } = useContext(MyContext);
+  const supportEmail = storeSettings?.supportEmail || "support@auramosaic.com";
+  const supportPhone = storeSettings?.supportPhone || "+880-1740734780";
+
   return (
     <footer className="site-footer">
       <div className="container">
         <div className="topInfo footer-perks">
           <div><span><GiPlantSeed /></span><div><strong>Curated joy</strong><small>Thoughtful finds, not endless clutter</small></div></div>
           <div><span><MdDeliveryDining /></span><div><strong>Easy delivery</strong><small>Simple checkout with COD</small></div></div>
-          <div><span><RiDiscountPercentFill /></span><div><strong>Clear totals</strong><small>No mystery at checkout</small></div></div>
+          <div><span><RiDiscountPercentFill /></span><div><strong>Clear totals</strong><small>Live shipping rules from the store</small></div></div>
           <div><span><IoIosPricetags /></span><div><strong>Live catalogue</strong><small>Fresh stock and real prices</small></div></div>
         </div>
 
         <div className="footer-main">
           <div className="footer-brand">
             <Link to="/" className="footer-logo-link">
-              <img src={logo} alt="Aura-Mosaic" />
-              <span>Aura-Mosaic</span>
+              <img className="footerBrandLogo" src={logo} alt="Aura-Mosaic" />
             </Link>
             <p>A cheerful little marketplace for self-care, creative finds, thoughtful gifts and AI-assisted shopping.</p>
             <div className="footer-mood-pills"><span>🌷 Lovely</span><span>🌈 Playful</span><span>✨ Smart</span></div>
+            <div className="footer-support-mini">
+              <a href={`mailto:${supportEmail}`}>{supportEmail}</a>
+              <a href={`tel:${supportPhone.replace(/\s+/g, "")}`}>{supportPhone}</a>
+            </div>
           </div>
 
           <div className="footer-links-grid linksWrap">
@@ -41,7 +50,7 @@ const Footer = () => {
               <ul>
                 <li><Link to="/gifting">AI Gift Studio</Link></li>
                 <li><Link to="/ai-studio">Aura AI Studio</Link></li>
-                <li><Link to="/history">My orders</Link></li>
+                <li><Link to="/history">My account</Link></li>
                 <li><Link to="/cart">My cart</Link></li>
               </ul>
             </div>

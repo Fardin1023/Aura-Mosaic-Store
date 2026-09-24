@@ -12,6 +12,7 @@ import {
 import { MyContext } from "../../App";
 import { askAuraGiftDesigner } from "../../api/api";
 import "./style.css";
+import logoMark from "../../assets/images/aura-mosaic-mark.png";
 
 const quickPrompts = [
   "Make a thoughtful birthday gift for my mom under Tk 2000",
@@ -24,7 +25,7 @@ const idOf = (product) => String(product?._id || product?.id || "");
 const imageOf = (product) =>
   (Array.isArray(product?.images) && product.images[0]) ||
   product?.image ||
-  "https://via.placeholder.com/600x450?text=Aura+Gift";
+  logoMark;
 const priceOf = (product) => Number(product?.price || 0);
 
 const Gifting = () => {

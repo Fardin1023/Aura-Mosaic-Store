@@ -5,68 +5,73 @@ import { useRef, useState } from "react";
 import "swiper/css";
 import "swiper/css/navigation";
 import "react-inner-image-zoom/lib/styles.min.css";
+import logoMark from "../../assets/images/aura-mosaic-mark.png";
 
 const ProductZoom = ({ images }) => {
   const [slideIndex, setSlideIndex] = useState(0);
-  const zoomSlider = useRef();
-  const zoomSliderBig = useRef();
+  const zoomSlider = useRef(null);
+  const zoomSliderBig = useRef(null);
 
-  // ✅ Ensure we always have at least one image
   const validImages =
-    images && images.length > 0
-      ? images
-      : ["https://via.placeholder.com/400x400?text=No+Image"];
+    Array.isArray(images) && images.length > 0
+      ? images.filter(Boolean)
+      : [logoMark];
 
   const goto = (index) => {
     setSlideIndex(index);
-    if (zoomSlider.current) zoomSlider.current.slideTo(index);
-    if (zoomSliderBig.current) zoomSliderBig.current.slideTo(index);
+    zoomSlider.current?.slideTo(index);
+    zoomSliderBig.current?.slideTo(index);
   };
 
   return (
     <div className="productZoom position-relative">
-      {/* Main Big Zoom Slider */}
       <Swiper
         slidesPerView={1}
         spaceBetween={0}
-        navigation={true}
+        navigation
         slidesPerGroup={1}
         modules={[Navigation]}
         className="zoomSliderBig"
-        ref={zoomSliderBig}
+        onSwiper={(swiper) => { zoomSliderBig.current = swiper; }}
+        onSlideChange={(swiper) => setSlideIndex(swiper.activeIndex)}
       >
         {validImages.map((img, idx) => (
-          <SwiperSlide key={idx}>
-            <div className="item">
+          <SwiperSlide key={`${img}-${idx}`}>
+            <div className="productZoom__mainItem">
               <InnerImageZoom
+                className="aura-inner-zoom"
                 zoomType="hover"
-                zoomScale={1.2} // slightly stronger zoom
+                zoomScale={1.35}
                 src={img}
+                alt={`Product view ${idx + 1}`}
               />
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
 
-      {/* Small Thumbnail Slider */}
-      <Swiper
-        slidesPerView={4}
-        spaceBetween={10}
-        modules={[Navigation]}
-        className="zoomSlider mt-3"
-        ref={zoomSlider}
-      >
-        {validImages.map((img, idx) => (
-          <SwiperSlide key={idx}>
-            <div
-              className={`thumb ${slideIndex === idx ? "active" : ""}`}
-              onClick={() => goto(idx)}
-            >
-              <img src={img} alt={`thumb-${idx}`} className="w-100" />
-            </div>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+      {validImages.length > 1 && (
+        <Swiper
+          slidesPerView={Math.min(4, validImages.length)}
+          spaceBetween={10}
+          modules={[Navigation]}
+          className="zoomSlider mt-3"
+          onSwiper={(swiper) => { zoomSlider.current = swiper; }}
+        >
+          {validImages.map((img, idx) => (
+            <SwiperSlide key={`thumb-${img}-${idx}`}>
+              <button
+                type="button"
+                className={`thumb ${slideIndex === idx ? "active" : ""}`}
+                onClick={() => goto(idx)}
+                aria-label={`View product image ${idx + 1}`}
+              >
+                <img src={img} alt="" />
+              </button>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      )}
     </div>
   );
 };
