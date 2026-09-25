@@ -11,6 +11,7 @@ import ProductDetails from "./pages/ProductDetails";
 import Footer from "./components/Footer";
 import Cart from "./pages/Cart";
 import ChatBot from "./components/ChatBot";
+import MobileBottomNav from "./components/MobileBottomNav";
 import Auth from "./pages/Auth";
 import ProductListing from "./pages/ProductListing";
 import OrderConfirmation from "./pages/OrderConfirmation";
@@ -426,6 +427,7 @@ function AppContent() {
       )}
 
       {isHeaderFooterShow && <Footer />}
+      {isHeaderFooterShow && <MobileBottomNav />}
       {isHeaderFooterShow && <ChatBot />}
       {showHomeFab && (
         <button

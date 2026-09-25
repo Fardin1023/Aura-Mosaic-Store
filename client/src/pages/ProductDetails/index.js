@@ -454,7 +454,7 @@ const ProductDetails = () => {
             </span>
             <p className="mt-3">{product.description}</p>
 
-            <div className="d-flex align-items-center mt-4">
+            <div className="d-flex align-items-center mt-4 productDetails__actions">
               <QuantityBox value={qty} onChange={setQty} max={Math.max(1, Number(product.countInStock || 1))} />
               <Button className="btn-blue btn-lg btn-big btn-round" onClick={handleAddToCart} disabled={Number(product.countInStock || 0) <= 0}>
                 <FaCartShopping />
@@ -475,6 +475,19 @@ const ProductDetails = () => {
               </Tooltip>
             </div>
           </div>
+        </div>
+
+        <div className="mobileProductPurchaseBar" aria-label="Mobile product actions">
+          <div className="mobileProductPurchaseBar__price">
+            <small>{product.countInStock > 0 ? "In stock" : "Out of stock"}</small>
+            <strong>৳{product.price}</strong>
+          </div>
+          <button type="button" className="mobileProductPurchaseBar__wish" onClick={handleAddToWishlist} aria-label="Wishlist">
+            {isWishlisted(product._id || product.id) ? <FaHeart /> : <FaRegHeart />}
+          </button>
+          <button type="button" className="mobileProductPurchaseBar__cart" onClick={handleAddToCart} disabled={Number(product.countInStock || 0) <= 0}>
+            <FaCartShopping /> <span>{Number(product.countInStock || 0) > 0 ? "Add to cart" : "Sold out"}</span>
+          </button>
         </div>
 
         {/* ------------------- Product Tabs Section ------------------- */}

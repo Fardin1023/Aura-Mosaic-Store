@@ -81,8 +81,41 @@ const Header = () => {
           </div>
         </div>
 
-        {/* 🔹 Header Bar (pill container) */}
-        <div className="header">
+        {/* Mobile ecommerce header */}
+        <div className="mobileCommerceHeader">
+          <div className="container">
+            <div className="mobileCommerceHeader__top">
+              <Link to="/" className="mobileCommerceHeader__logo" aria-label="Aura-Mosaic Home">
+                <img src={logoMark} alt="Aura-Mosaic" />
+              </Link>
+
+              <div className="mobileCommerceHeader__location">
+                <CityDropdown />
+              </div>
+
+              <div className="mobileCommerceHeader__topActions">
+                <Link to="/ai-studio" className="mobileCommerceHeader__ai" aria-label="Open Aura AI Studio" title="Aura AI">
+                  ✦
+                </Link>
+                <button
+                  type="button"
+                  className="mobileCommerceHeader__theme"
+                  onClick={toggleTheme}
+                  aria-label={theme === "theme-green" ? "Switch to Berry Bloom theme" : "Switch to Mint Pop theme"}
+                  title={theme === "theme-green" ? "Berry Bloom" : "Mint Pop"}
+                >
+                  {theme === "theme-green" ? "🍬" : "🌷"}
+                </button>
+              </div>
+            </div>
+            <div className="mobileCommerceHeader__search">
+              <SearchBox />
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop header */}
+        <div className="header desktopCommerceHeader">
           <div className="container">
             <div className="row align-items-center">
               {/* Logo + Animated Brand Name */}

@@ -15,6 +15,8 @@ import { BsFillGridFill } from "react-icons/bs";
 import { PiDotsNineBold } from "react-icons/pi";
 import { IoMdMenu } from "react-icons/io";
 import { FaAngleDown } from "react-icons/fa6";
+import { FiSliders } from "react-icons/fi";
+import { IoClose } from "react-icons/io5";
 
 const money = (value) => (Number.isFinite(Number(value)) ? Number(value).toFixed(0) : "0");
 const SORT_LABELS = {
@@ -54,6 +56,14 @@ const ProductListing = () => {
 
   const [anchorSize, setAnchorSize] = useState(null);
   const [anchorSort, setAnchorSort] = useState(null);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    if (!mobileFiltersOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = previousOverflow; };
+  }, [mobileFiltersOpen]);
 
   const baseParams = useMemo(
     () => ({
@@ -197,8 +207,22 @@ const ProductListing = () => {
     <section className="product_Listing_Page">
       <div className="container">
         <div className="productListing d-flex">
-          <div className="sidebar">
+          <>
+          <button
+            type="button"
+            className={`mobileFilterBackdrop ${mobileFiltersOpen ? "is-open" : ""}`}
+            onClick={() => setMobileFiltersOpen(false)}
+            aria-label="Close filters"
+          />
+          <div className={`sidebar ${mobileFiltersOpen ? "mobile-open" : ""}`}>
             <div className="sticky">
+              <div className="mobileFilterHeader">
+                <div>
+                  <span>Refine your search</span>
+                  <strong>Filters</strong>
+                </div>
+                <button type="button" onClick={() => setMobileFiltersOpen(false)} aria-label="Close filters"><IoClose /></button>
+              </div>
               <div className="filterBox">
                 <h6>Quick Filters</h6>
                 <p className="text-muted" style={{ marginBottom: 8 }}>
@@ -267,15 +291,23 @@ const ProductListing = () => {
                 </div>
               </div>
 
-              <Button variant="outlined" className="btn-sml" onClick={resetFilters}>Reset filters</Button>
+              <div className="mobileFilterFooter">
+                <Button variant="outlined" className="btn-sml" onClick={resetFilters}>Reset</Button>
+                <Button className="mobileFilterApply" onClick={() => setMobileFiltersOpen(false)}>Show {total} items</Button>
+              </div>
+              <Button variant="outlined" className="btn-sml desktopResetFilters" onClick={resetFilters}>Reset filters</Button>
             </div>
           </div>
+          </>
 
           <div className={`content_right ${items.length <= 2 ? "is-sparse" : ""}`}>
             <h3 className="mt-3 mb-1">{title}</h3>
             <p className="text-muted mb-3">Showing {items.length} of {total} items (Sort: {SORT_LABELS[sort]})</p>
 
             <div className="showBy mt-3 mb-3 d-flex justify-content-start">
+              <button type="button" className="mobileFilterButton" onClick={() => setMobileFiltersOpen(true)}>
+                <FiSliders /> <span>Filters</span>
+              </button>
               <div className="d-flex align-items-center btnWrapper">
                 <Button className={effectiveProductView === "one" ? "act" : ""} onClick={() => setProductView("one")}><IoMdMenu /></Button>
                 <Button className={effectiveProductView === "two" ? "act" : ""} onClick={() => setProductView("two")}><PiDotsNineBold /></Button>

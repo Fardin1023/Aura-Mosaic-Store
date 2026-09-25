@@ -40,7 +40,7 @@ const Navigation = () => {
 
   const quickLinks = useMemo(() => {
     const categoryNames = categories.map((item) => item?.name).filter(Boolean).slice(0, 3);
-    return [...categoryNames, "Gifting", "New Arrivals"];
+    return ["All", ...categoryNames, "Gifting", "New Arrivals"];
   }, [categories]);
 
   const linkFor = (name) => {
