@@ -10705,3 +10705,189 @@ textarea {
     transition: none !important;
   }
 }
+
+/* ===== Profile city sync + reusable city picker ===== */
+.cityPickerModal__eyebrow {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: var(--am-primary-strong);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.cityPickerModal .locationSearch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 16px !important;
+}
+
+.cityPickerModal .locationSearch input {
+  flex: 1;
+  min-width: 0;
+  height: 50px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.cityPickerModal__searchIcon {
+  flex: 0 0 auto;
+  font-size: 18px;
+  color: var(--am-primary-strong);
+}
+
+.cityPickerModal__error {
+  margin-top: 12px;
+  padding: 11px 13px;
+  border: 1px solid #f2c4cc;
+  border-radius: 14px;
+  background: #fff2f4;
+  color: #a4384c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cityPickerModal__footnote {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--am-primary-soft) 48%, white);
+  color: var(--am-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.cityPickerModal__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: auraCitySpin .7s linear infinite;
+}
+
+.cityList__check.saving {
+  color: var(--am-primary-strong) !important;
+  background: color-mix(in srgb, var(--am-primary-soft) 72%, white) !important;
+}
+
+@keyframes auraCitySpin {
+  to { transform: rotate(360deg); }
+}
+
+.account-city-field,
+.profile-completion-city-field {
+  display: flex !important;
+  flex-direction: column;
+}
+
+.account-city-picker-btn,
+.profile-city-picker-btn {
+  width: 100%;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--am-primary) 13%, var(--am-border));
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255,255,255,.96), color-mix(in srgb, var(--am-primary-soft) 30%, white));
+  color: var(--am-ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 9px 22px rgba(75, 62, 92, .05);
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.account-city-picker-btn:hover,
+.profile-city-picker-btn:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--am-primary) 35%, white);
+  box-shadow: 0 14px 28px rgba(75, 62, 92, .1);
+}
+
+.account-city-picker-btn > svg:first-child,
+.profile-city-picker-btn > svg:first-child {
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: 11px;
+  background: var(--am-gradient);
+  color: #fff;
+}
+
+.account-city-picker-btn > span,
+.profile-city-picker-btn > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.account-city-picker-btn > svg:last-child,
+.profile-city-picker-btn > svg:last-child {
+  justify-self: end;
+  color: var(--am-primary-strong);
+}
+
+.account-city-field > small,
+.profile-completion-city-field > small {
+  display: block;
+  margin-top: 7px;
+  color: var(--am-muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.profileCityPickerModal .MuiPaper-elevation {
+  max-height: min(760px, 90vh) !important;
+}
+
+@media (max-width: 620px) {
+  .profileCityPickerModal .MuiDialog-container {
+    align-items: flex-end !important;
+  }
+
+  .profileCityPickerModal .MuiPaper-elevation {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: 88vh !important;
+    margin: 0 !important;
+    border-radius: 28px 28px 0 0 !important;
+    padding: 24px 16px calc(20px + env(safe-area-inset-bottom)) !important;
+    animation: auraCitySheetUp .28s cubic-bezier(.22,.61,.36,1);
+  }
+
+  .profileCityPickerModal .cityList {
+    max-height: 52vh !important;
+  }
+
+  .account-city-picker-btn,
+  .profile-city-picker-btn {
+    min-height: 58px;
+    border-radius: 17px;
+  }
+}
+
+@keyframes auraCitySheetUp {
+  from { transform: translateY(28px); opacity: .72; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cityPickerModal__spinner,
+  .profileCityPickerModal .MuiPaper-elevation,
+  .account-city-picker-btn,
+  .profile-city-picker-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -2,6 +2,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiArrowRight, FiMapPin, FiPhone, FiUser } from "react-icons/fi";
 import { MyContext } from "../../App";
+import CityPickerModal from "../../components/CityPickerModal";
 import { updateMe } from "../../api/api";
 
 const CompleteProfile = () => {
@@ -17,6 +18,7 @@ const CompleteProfile = () => {
     picture: user?.picture || "",
   });
   const [saving, setSaving] = useState(false);
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -72,6 +74,7 @@ const CompleteProfile = () => {
   };
 
   return (
+    <>
     <section className="profile-completion-page">
       <div className="profile-completion-shell">
         <div className="profile-completion-art">
@@ -101,7 +104,15 @@ const CompleteProfile = () => {
             <label><span>Name</span><input name="name" value={form.name} onChange={updateField} required /></label>
             <label><span>Email</span><input name="email" type="email" value={form.email} readOnly /></label>
             <label><span>Phone</span><input name="phone" value={form.phone} onChange={updateField} placeholder="017XXXXXXXX" /></label>
-            <label><span>City</span><select name="city" value={form.city} onChange={updateField}><option value="">Select a city</option>{(cityList || []).map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label>
+            <label className="profile-completion-city-field">
+              <span>City</span>
+              <button type="button" className="profile-city-picker-btn" onClick={() => setCityPickerOpen(true)}>
+                <FiMapPin />
+                <span>{form.city || "Choose your delivery city"}</span>
+                <FiArrowRight />
+              </button>
+              <small>Saved to your profile and reused automatically at checkout.</small>
+            </label>
             <label className="profile-completion-full"><span>Address line 1</span><input name="addressLine1" value={form.addressLine1} onChange={updateField} placeholder="House, road, area" /></label>
             <label className="profile-completion-full"><span>Address line 2</span><input name="addressLine2" value={form.addressLine2} onChange={updateField} placeholder="Apartment, landmark or extra directions" /></label>
             <label><span>Postal code</span><input name="postalCode" value={form.postalCode} onChange={updateField} placeholder="Optional" /></label>
@@ -114,6 +125,17 @@ const CompleteProfile = () => {
         </form>
       </div>
     </section>
+      <CityPickerModal
+        open={cityPickerOpen}
+        onClose={() => setCityPickerOpen(false)}
+        cities={cityList}
+        value={form.city}
+        onSelect={(city) => setForm((current) => ({ ...current, city }))}
+        title="Choose your delivery city"
+        subtitle="Select the city you want saved to your Aura-Mosaic profile."
+        profileMode
+      />
+    </>
   );
 };
 

@@ -31,6 +31,7 @@ import {
   getWishlist,
   removeWishlistItem,
   getStoreSettings,
+  updateMe,
 } from "./api/api";
 
 const MyContext = createContext();
@@ -237,8 +238,37 @@ function AppContent() {
   }, [selectedCity]);
 
   useEffect(() => {
-    if (user?.city) setSelectedCity((current) => current || user.city);
-  }, [user?.city]);
+    // For authenticated shoppers the profile city is the canonical delivery city.
+    // This keeps Header, Cart, Checkout and Account views synchronized after login or profile edits.
+    if (user?.city && selectedCity !== user.city) setSelectedCity(user.city);
+  }, [selectedCity, user?.city]);
+
+  const updateDeliveryCity = useCallback(async (cityName) => {
+    const nextCity = String(cityName || "").trim();
+    if (!nextCity) return null;
+
+    const previousCity = selectedCity;
+    const previousUser = user;
+
+    // Guests can use a browsing city locally; signed-in users persist the city to their profile.
+    setSelectedCity(nextCity);
+    if (!user) return { city: nextCity, persisted: false };
+
+    setUser((current) => current ? { ...current, city: nextCity } : current);
+    try {
+      const response = await updateMe({ city: nextCity });
+      const savedUser = response?.data?.user;
+      if (savedUser) {
+        setUser(savedUser);
+        setSelectedCity(savedUser.city || nextCity);
+      }
+      return { city: savedUser?.city || nextCity, persisted: true, user: savedUser };
+    } catch (error) {
+      setUser(previousUser);
+      setSelectedCity(previousUser?.city || previousCity || "");
+      throw error;
+    }
+  }, [selectedCity, user]);
 
   useEffect(() => {
     document.body.classList.remove("theme-green", "theme-pink");
@@ -319,6 +349,7 @@ function AppContent() {
     cityList,
     selectedCity,
     setSelectedCity,
+    updateDeliveryCity,
     isHeaderFooterShow,
     setisHeaderFooterShow: setIsHeaderFooterShow,
     user,

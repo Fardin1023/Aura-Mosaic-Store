@@ -16,6 +16,7 @@ import {
 } from "react-icons/fi";
 import { MyContext } from "../../App";
 import ProductItem from "../../components/ProductItem";
+import CityPickerModal from "../../components/CityPickerModal";
 import {
   cancelMyOrder,
   changePassword,
@@ -55,6 +56,7 @@ const History = () => {
   const [err, setErr] = useState("");
   const [activeTab, setActiveTab] = useState("profile");
   const [profileSaving, setProfileSaving] = useState(false);
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [profile, setProfile] = useState({ name: "", phone: "", city: "", addressLine1: "", addressLine2: "", postalCode: "", picture: "" });
   const [passwords, setPasswords] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -99,6 +101,14 @@ const History = () => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!contextUser) return;
+    setUser(contextUser);
+    if (contextUser.city) {
+      setProfile((current) => ({ ...current, city: contextUser.city }));
+    }
+  }, [contextUser]);
 
   const cancelOrder = async (order) => {
     const ask = await Swal.fire({
@@ -195,6 +205,7 @@ const History = () => {
   const initials = String(user?.name || "A").split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 
   return (
+    <>
     <section className="section account-center-page">
       <div className="container">
         <div className="account-center-hero">
@@ -233,7 +244,15 @@ const History = () => {
               <div className="account-form-grid">
                 <label><span>Name</span><input value={profile.name} onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))} required /></label>
                 <label><span>Phone</span><input value={profile.phone} onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))} placeholder="017XXXXXXXX" /></label>
-                <label><span>City</span><select value={profile.city} onChange={(e) => setProfile((p) => ({ ...p, city: e.target.value }))}><option value="">Select a city</option>{(cityList || []).map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></label>
+                <label className="account-city-field">
+                  <span>City</span>
+                  <button type="button" className="account-city-picker-btn" onClick={() => setCityPickerOpen(true)}>
+                    <FiMapPin />
+                    <span>{profile.city || "Choose your delivery city"}</span>
+                    <FiArrowRight />
+                  </button>
+                  <small>This city will be used automatically across Aura-Mosaic after you save your profile.</small>
+                </label>
                 <label><span>Postal code</span><input value={profile.postalCode} onChange={(e) => setProfile((p) => ({ ...p, postalCode: e.target.value }))} placeholder="Optional" /></label>
                 <label><span>Profile photo URL</span><input value={profile.picture} onChange={(e) => setProfile((p) => ({ ...p, picture: e.target.value }))} placeholder="Optional image URL" /></label>
                 <label className="account-form-full"><span>Address line 1</span><input value={profile.addressLine1} onChange={(e) => setProfile((p) => ({ ...p, addressLine1: e.target.value }))} placeholder="House, road, area" /></label>
@@ -342,6 +361,17 @@ const History = () => {
         )}
       </div>
     </section>
+      <CityPickerModal
+        open={cityPickerOpen}
+        onClose={() => setCityPickerOpen(false)}
+        cities={cityList}
+        value={profile.city}
+        onSelect={(city) => setProfile((current) => ({ ...current, city }))}
+        title="Choose your profile city"
+        subtitle="Pick your delivery city. Save your profile to use it everywhere in Aura-Mosaic."
+        profileMode
+      />
+    </>
   );
 };
 
